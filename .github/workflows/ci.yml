@@ -50,6 +50,11 @@ jobs:
             **/build/test-results/**
       - uses: actions/upload-artifact@v4
         with:
+          name: room-schemas
+          path: app/schemas/**
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
@@ -59,9 +64,8 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: warn
 
-  # Инструментальные тесты (UI онбординга, миграции Room) требуют эмулятора — запускаются вручную.
+  # Инструментальные тесты (UI онбординга, миграции Room) на эмуляторе.
   instrumented:
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,4 +83,13 @@ jobs:
         with:
           api-level: 34
           arch: x86_64
+          disable-animations: true
           script: ./gradlew connectedDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: instrumented-reports
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: warn
