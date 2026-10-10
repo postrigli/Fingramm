@@ -48,6 +48,11 @@ jobs:
           path: |
             **/build/reports/**
             **/build/test-results/**
+      - name: Показать экспортированные схемы Room
+        if: always()
+        run: |
+          find . -path '*schemas*' -name '*.json' -not -path '*/node_modules/*' | sort
+          for f in $(find app/schemas -name '*.json' | sort); do echo "=== $f"; cat "$f"; echo; done
       - uses: actions/upload-artifact@v4
         with:
           name: room-schemas
