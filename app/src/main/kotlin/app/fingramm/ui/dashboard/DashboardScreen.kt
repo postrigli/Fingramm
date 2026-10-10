@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -390,7 +392,13 @@ private fun MetricHelpSheet(id: MetricId, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
-        ScreenColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Text(stringResource(help.title), style = MaterialTheme.typography.headlineSmall)
             HelpBlock(R.string.metric_help_what, stringResource(help.what))
             HelpBlock(R.string.metric_help_how, stringResource(help.how))
