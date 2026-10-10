@@ -2,7 +2,7 @@
 <!-- Все строки интерфейса. Язык по умолчанию — русский; локализации добавляются в values-xx/strings.xml.
      В строках с аргументами литерал процента пишется как %%, без аргументов — как %. -->
 <resources>
-    <string name="app_name">Семейный бюджет</string>
+    <string name="app_name">Fingramm</string>
 
     <!-- Общие -->
     <string name="action_back">Назад</string>
@@ -472,7 +472,7 @@
     <string name="backup_import_confirm">Загрузить</string>
     <string name="backup_rejected_title">Файл не подходит</string>
     <string name="backup_rejected_malformed">Файл повреждён или не является резервной копией этого приложения.</string>
-    <string name="backup_rejected_not_backup">Это не резервная копия приложения «Семейный бюджет».</string>
+    <string name="backup_rejected_not_backup">Это не резервная копия приложения Fingramm.</string>
     <string name="backup_rejected_newer">Файл создан более новой версией приложения. Обновите приложение и повторите.</string>
     <string name="backup_rejected_invalid">В файле нарушена целостность данных, загрузка отменена.</string>
 
@@ -488,21 +488,25 @@
     <!-- Уведомления -->
     <string name="notification_channel_name">Напоминания</string>
     <string name="notification_channel_description">Мягкие напоминания внести операции</string>
-    <string name="notification_title">Семейный бюджет</string>
+    <string name="notification_title">Fingramm</string>
     <string name="notification_text_daily">Как прошёл день? Внесите траты — это займёт минуту.</string>
     <string name="notification_text_weekly">Неделя позади — самое время обновить учёт.</string>
 
-    <!-- Виджет рабочего стола -->
-    <string name="widget_description">Быстрое добавление дохода или расхода</string>
-    <string name="widget_title">Добавить операцию</string>
+    <!-- Виджеты рабочего стола -->
+    <string name="widget_quick_label">Fingramm: добавить операцию</string>
+    <string name="widget_quick_description">Две кнопки: добавить расход или доход</string>
+    <string name="widget_month_label">Fingramm: показатели месяца</string>
+    <string name="widget_month_description">Доходы, расходы и остаток текущего месяца, кнопки добавления операции</string>
     <string name="widget_expense">Расход</string>
     <string name="widget_income">Доход</string>
     <string name="widget_expense_glyph">−</string>
     <string name="widget_income_glyph">+</string>
     <string name="widget_expense_cd">Добавить расход</string>
     <string name="widget_income_cd">Добавить доход</string>
-    <string name="widget_open_transactions">Операции</string>
-    <string name="widget_open_dashboard">Сводка</string>
-    <string name="widget_open_transactions_cd">Открыть список операций</string>
-    <string name="widget_open_dashboard_cd">Открыть сводку</string>
+    <string name="widget_label_income">Доходы</string>
+    <string name="widget_label_expenses">Расходы</string>
+    <string name="widget_label_balance">Остаток</string>
+    <string name="widget_stats_cd">%1$s. Доходы %2$s, расходы %3$s, остаток %4$s. Открыть сводку</string>
+    <string name="widget_stats_hidden_cd">%1$s. Суммы скрыты, потому что включена блокировка. Открыть приложение</string>
+    <string name="widget_stats_empty_cd">Откройте приложение и пройдите опрос, чтобы увидеть показатели</string>
 </resources>

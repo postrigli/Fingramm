@@ -242,7 +242,6 @@ private fun NavHostController.perform(action: QuickAction) {
             goFresh(Routes.DASHBOARD)
             navigate(Routes.transactionEdit(type = action.type))
         }
-        QuickAction.OpenTransactions -> goFresh(Routes.TRANSACTIONS)
         QuickAction.OpenDashboard -> goFresh(Routes.DASHBOARD)
     }
 }

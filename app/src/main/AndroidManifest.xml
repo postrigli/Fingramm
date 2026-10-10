@@ -30,17 +30,33 @@
             </intent-filter>
         </activity>
 
-        <!-- Виджет рабочего стола «Добавить операцию». Данных не читает: только открывает экраны приложения. -->
+        <!-- Виджет 2×2 «Добавить операцию»: две кнопки, данных не читает. -->
         <receiver
             android:name=".widget.QuickAddWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_title">
+            android:label="@string/widget_quick_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_add_widget_info" />
+        </receiver>
+
+        <!-- Виджет 4×2: показатели текущего месяца и кнопки. Месяц сразу меняется при смене даты/времени/пояса. -->
+        <receiver
+            android:name=".widget.MonthWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_month_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/month_widget_info" />
         </receiver>
 
         <!-- WorkManager инициализируется вручную в FingrammApp (нужна HiltWorkerFactory). -->

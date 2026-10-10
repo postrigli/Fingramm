@@ -21,7 +21,6 @@ class QuickActionTest {
     private val all = listOf(
         QuickAction.AddTransaction(TransactionType.EXPENSE),
         QuickAction.AddTransaction(TransactionType.INCOME),
-        QuickAction.OpenTransactions,
         QuickAction.OpenDashboard,
     )
 
@@ -39,7 +38,7 @@ class QuickActionTest {
 
     @Test
     fun `launch intent targets the main activity and reuses the running instance`() {
-        val intent = QuickAction.launchIntent(context, QuickAction.OpenTransactions)
+        val intent = QuickAction.launchIntent(context, QuickAction.OpenDashboard)
         assertEquals(MainActivity::class.java.name, intent.component?.className)
         assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
         assertTrue(intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TOP != 0)

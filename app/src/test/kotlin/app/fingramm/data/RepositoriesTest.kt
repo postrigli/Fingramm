@@ -32,6 +32,7 @@ import app.fingramm.domain.survey.GoalDraft
 import app.fingramm.domain.survey.SurveyDraft
 import app.fingramm.domain.survey.SurveyMapper
 import app.fingramm.domain.survey.SurveyResult
+import app.fingramm.widget.WidgetStateLoader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,8 +51,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
+import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneOffset
 
 /** Репозитории поверх Room в памяти (Robolectric): запросы, поиск, фильтры, регулярные операции, бэкап. */
 @RunWith(RobolectricTestRunner::class)
@@ -403,5 +406,46 @@ class RepositoriesTest {
         val small = backup.snapshot().copy(transactions = emptyList())
         backup.importData(small, ImportMode.REPLACE)
         assertTrue(backup.snapshot().transactions.isEmpty())
+    }
+
+    // ---------- Виджет месяца ----------
+
+    private fun widgetLoader(): WidgetStateLoader {
+        val clock = Clock.fixed(today.atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC)
+        return WidgetStateLoader(stats, budget, settings, clock)
+    }
+
+    @Test
+    fun widgetBeforeOnboardingIsNotConfigured() = runBlocking {
+        val state = widgetLoader().load()
+        assertEquals(false, state.configured)
+        assertEquals(YearMonth.of(2026, 10), state.month)
+        assertEquals(0L, state.incomeMinor + state.expensesMinor)
+    }
+
+    @Test
+    fun widgetSumsOnlyTheCurrentCalendarMonth() = runBlocking {
+        onboard()
+        transactions.add(tx(100_000, "salary", today.withDayOfMonth(1), type = TransactionType.INCOME), 1)
+        transactions.add(tx(30_000, "groceries", today.withDayOfMonth(1)), 2)
+        transactions.add(tx(20_000, "cafe", today), 3)
+        // Конец прошлого месяца и начало следующего в итоги не входят.
+        transactions.add(tx(999_000, "groceries", today.withDayOfMonth(1).minusDays(1)), 4)
+        transactions.add(tx(888_000, "salary", today.plusMonths(1).withDayOfMonth(1), type = TransactionType.INCOME), 5)
+        val state = widgetLoader().load()
+        assertEquals(true, state.configured)
+        assertEquals(100_000L, state.incomeMinor)
+        assertEquals(50_000L, state.expensesMinor)
+        assertEquals(50_000L, state.balanceMinor)
+        assertEquals(false, state.amountsHidden)
+    }
+
+    @Test
+    fun widgetHidesAmountsWhileTheAppLockIsOn() = runBlocking {
+        onboard()
+        settings.setLockEnabled(true)
+        assertEquals(true, widgetLoader().load().amountsHidden)
+        settings.setLockEnabled(false)
+        assertEquals(false, widgetLoader().load().amountsHidden)
     }
 }

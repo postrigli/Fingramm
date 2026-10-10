@@ -22,10 +22,7 @@ sealed interface QuickAction {
             }
     }
 
-    data object OpenTransactions : QuickAction {
-        override val intentAction: String = QuickAction.ACTION_OPEN_TRANSACTIONS
-    }
-
+    /** Открыть сводку (нажатие на показатели месяца). */
     data object OpenDashboard : QuickAction {
         override val intentAction: String = QuickAction.ACTION_OPEN_DASHBOARD
     }
@@ -33,7 +30,6 @@ sealed interface QuickAction {
     companion object {
         const val ACTION_ADD_EXPENSE = "app.fingramm.action.ADD_EXPENSE"
         const val ACTION_ADD_INCOME = "app.fingramm.action.ADD_INCOME"
-        const val ACTION_OPEN_TRANSACTIONS = "app.fingramm.action.OPEN_TRANSACTIONS"
         const val ACTION_OPEN_DASHBOARD = "app.fingramm.action.OPEN_DASHBOARD"
 
         private const val LAUNCH_FLAGS =
@@ -43,7 +39,6 @@ sealed interface QuickAction {
         fun fromIntent(intent: Intent?): QuickAction? = when (intent?.action) {
             ACTION_ADD_EXPENSE -> AddTransaction(TransactionType.EXPENSE)
             ACTION_ADD_INCOME -> AddTransaction(TransactionType.INCOME)
-            ACTION_OPEN_TRANSACTIONS -> OpenTransactions
             ACTION_OPEN_DASHBOARD -> OpenDashboard
             else -> null
         }

@@ -6,6 +6,7 @@ import androidx.work.Configuration
 import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.notifications.ReminderScheduler
 import app.fingramm.notifications.ReminderWorker
+import app.fingramm.widget.WidgetRefresher
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,8 @@ class FingrammApp : Application(), Configuration.Provider {
 
     @Inject lateinit var reminderScheduler: ReminderScheduler
 
+    @Inject lateinit var widgetRefresher: WidgetRefresher
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val workManagerConfiguration: Configuration
@@ -31,5 +34,6 @@ class FingrammApp : Application(), Configuration.Provider {
         ReminderWorker.ensureChannel(this)
         // Пересчитываем ближайшее срабатывание при каждом запуске: подхватывает смену часового пояса и перевод часов.
         appScope.launch { reminderScheduler.apply(settings.current().reminder) }
+        widgetRefresher.start(appScope)
     }
 }
