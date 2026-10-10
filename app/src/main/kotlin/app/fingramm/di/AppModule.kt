@@ -12,6 +12,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 import javax.inject.Singleton
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -38,5 +40,14 @@ object AppModule {
     /** Часы вынесены в DI, чтобы время можно было подменять в тестах. */
     @Provides
     @Singleton
-    fun clock(): Clock = Clock.systemDefaultZone()
+    fun clock(): Clock = SystemZoneClock
+}
+
+/** Системные часы, которые читают часовой пояс устройства при каждом обращении (а не при создании). */
+private object SystemZoneClock : Clock() {
+    override fun getZone(): ZoneId = ZoneId.systemDefault()
+
+    override fun withZone(zone: ZoneId): Clock = system(zone)
+
+    override fun instant(): Instant = Instant.now()
 }

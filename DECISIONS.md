@@ -32,8 +32,9 @@
 | ktlint-gradle / detekt | 12.3.0 / 1.23.8 |
 | Robolectric | 4.14.1 |
 
-`compileSdk = targetSdk = 36`, `minSdk = 26`. Версии подобраны как проверенная связка на момент написания;
-при обновлении AGP/Kotlin сверяйте совместимость KSP и Hilt.
+`compileSdk = targetSdk = 36`, `minSdk = 26`. Это согласованная связка, известная автору; **она может быть не самой
+свежей** (в Maven Central уже есть более новые Kotlin, Hilt и Compose Multiplatform, а актуальный targetSdk мог
+вырасти). Обновляйте пакетом (AGP + Kotlin + KSP + Hilt + Compose BOM) и сверяйте совместимость.
 
 ## 2. Архитектура
 
