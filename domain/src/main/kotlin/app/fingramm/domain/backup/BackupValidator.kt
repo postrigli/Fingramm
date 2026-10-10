@@ -1,5 +1,6 @@
 package app.fingramm.domain.backup
 
+import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.period.BudgetPeriod
 
 /** Проверка целостности данных бэкапа перед импортом. Возвращает человекочитаемые замечания. */
@@ -8,6 +9,7 @@ public object BackupValidator {
     private const val MAX_MINUTE = 59
     private const val MAX_WEEKDAY = 7
     private const val MAX_DAY_OF_MONTH = 31
+    private const val MAX_NOTIFY_MINUTE = 1439
 
     public fun validate(data: BackupData): List<String> =
         profile(data) + uniqueIds(data) + transactions(data) + templates(data) + limits(data) + goals(data) +
@@ -50,10 +52,16 @@ public object BackupValidator {
     private fun templates(data: BackupData): List<String> {
         val categoryIds = data.categories.map { it.id }.toSet()
         return data.recurringTemplates.flatMap { r ->
+            val monthly = r.frequency == RecurrenceFrequency.MONTHLY
+            val weekly = r.frequency == RecurrenceFrequency.WEEKLY
+            val badWeekdays = weekly && (r.weekdays.isEmpty() || r.weekdays.any { it !in 1..MAX_WEEKDAY })
+            val badTime = r.notifyAtMinute?.let { it !in 0..MAX_NOTIFY_MINUTE } == true
             listOfNotNull(
                 "recurring ${r.id}: сумма должна быть > 0".takeIf { r.amountMinor <= 0 },
                 "recurring ${r.id}: неизвестная категория ${r.categoryId}".takeIf { r.categoryId !in categoryIds },
-                "recurring ${r.id}: день месяца вне 1..31".takeIf { r.dayOfMonth !in 1..MAX_DAY_OF_MONTH },
+                "recurring ${r.id}: день месяца вне 1..31".takeIf { monthly && r.dayOfMonth !in 1..MAX_DAY_OF_MONTH },
+                "recurring ${r.id}: для еженедельного повтора нужны дни недели 1..7".takeIf { badWeekdays },
+                "recurring ${r.id}: время уведомления вне 0..1439".takeIf { badTime },
             )
         }
     }

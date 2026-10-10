@@ -12,6 +12,7 @@ import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.GoalHorizon
 import app.fingramm.domain.model.InputMode
 import app.fingramm.domain.model.NamedAmount
+import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.model.SavingsEntry
 import app.fingramm.domain.model.TimeCommitment
 import app.fingramm.domain.model.TransactionType
@@ -103,6 +104,12 @@ data class RecurringTemplateEntity(
     val dayOfMonth: Int,
     val nextDueDate: LocalDate,
     val active: Boolean,
+    /** Добавлено в версии 2 схемы. */
+    val frequency: RecurrenceFrequency,
+    /** Дни недели битовой маской: бит 0 — понедельник … бит 6 — воскресенье. */
+    val weekdaysMask: Int,
+    /** Время уведомления в минутах от полуночи; null — без уведомления. */
+    val notifyAtMinute: Int?,
 )
 
 @Entity(

@@ -6,7 +6,7 @@ import app.fingramm.MainActivity
 import app.fingramm.domain.model.TransactionType
 
 /**
- * Быстрое действие, которое виджет передаёт приложению через Intent.action.
+ * Быстрое действие, которое виджет или уведомление передаёт приложению через Intent.action.
  * Это единственный способ «заказать» экран извне: данные в Intent не передаются, поэтому подделать нечего,
  * а экран блокировки остаётся впереди — действие выполняется только после разблокировки.
  */
@@ -22,6 +22,11 @@ sealed interface QuickAction {
             }
     }
 
+    /** Открыть список операций с ожидающими регулярными (нажатие на уведомление о платеже). */
+    data object OpenTransactions : QuickAction {
+        override val intentAction: String = QuickAction.ACTION_OPEN_TRANSACTIONS
+    }
+
     /** Открыть сводку (нажатие на показатели месяца). */
     data object OpenDashboard : QuickAction {
         override val intentAction: String = QuickAction.ACTION_OPEN_DASHBOARD
@@ -31,6 +36,7 @@ sealed interface QuickAction {
         const val ACTION_ADD_EXPENSE = "app.fingramm.action.ADD_EXPENSE"
         const val ACTION_ADD_INCOME = "app.fingramm.action.ADD_INCOME"
         const val ACTION_OPEN_DASHBOARD = "app.fingramm.action.OPEN_DASHBOARD"
+        const val ACTION_OPEN_TRANSACTIONS = "app.fingramm.action.OPEN_TRANSACTIONS"
 
         private const val LAUNCH_FLAGS =
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -40,6 +46,7 @@ sealed interface QuickAction {
             ACTION_ADD_EXPENSE -> AddTransaction(TransactionType.EXPENSE)
             ACTION_ADD_INCOME -> AddTransaction(TransactionType.INCOME)
             ACTION_OPEN_DASHBOARD -> OpenDashboard
+            ACTION_OPEN_TRANSACTIONS -> OpenTransactions
             else -> null
         }
 

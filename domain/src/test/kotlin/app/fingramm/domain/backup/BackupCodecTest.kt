@@ -1,5 +1,6 @@
 package app.fingramm.domain.backup
 
+import app.fingramm.domain.model.RecurrenceFrequency
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -92,6 +93,44 @@ class BackupCodecTest {
         assertTrue(issues.any { it.contains("сумма должна быть") })
         assertTrue(issues.any { it.contains("накоплено") })
         assertTrue(issues.any { it.contains("reminder") })
+    }
+
+    @Test
+    fun `weekly recurring templates survive a round trip`() {
+        val base = TestData.backup()
+        val weekly = base.recurringTemplates.first().copy(
+            frequency = RecurrenceFrequency.WEEKLY,
+            weekdays = setOf(1, 3, 5),
+            notifyAtMinute = 8 * 60 + 15,
+        )
+        val data = base.copy(recurringTemplates = listOf(weekly) + base.recurringTemplates.drop(1))
+        val decoded = BackupCodec.decode(BackupCodec.encode(BackupFile(data = data))) as BackupDecodeResult.Success
+        assertEquals(weekly, decoded.file.data.recurringTemplates.first())
+    }
+
+    @Test
+    fun `old recurring templates are monthly without a notification`() {
+        val old = TestData.backup().recurringTemplates.first()
+        assertEquals(RecurrenceFrequency.MONTHLY, old.frequency)
+        assertEquals(emptySet<Int>(), old.weekdays)
+        assertEquals(null, old.notifyAtMinute)
+    }
+
+    @Test
+    fun `validator checks weekdays and notification time of recurring templates`() {
+        val data = TestData.backup()
+        val template = data.recurringTemplates.first()
+        fun issues(changed: app.fingramm.domain.model.RecurringTemplate) =
+            BackupValidator.validate(data.copy(recurringTemplates = listOf(changed)))
+
+        val noDays = template.copy(frequency = RecurrenceFrequency.WEEKLY, weekdays = emptySet())
+        assertTrue(issues(noDays).any { it.contains("дни недели") })
+        val badDay = template.copy(frequency = RecurrenceFrequency.WEEKLY, weekdays = setOf(8))
+        assertTrue(issues(badDay).any { it.contains("дни недели") })
+        assertTrue(issues(template.copy(notifyAtMinute = 1440)).any { it.contains("время уведомления") })
+        assertTrue(issues(template.copy(notifyAtMinute = -1)).any { it.contains("время уведомления") })
+        val valid = template.copy(frequency = RecurrenceFrequency.WEEKLY, weekdays = setOf(7), notifyAtMinute = 1439)
+        assertTrue(issues(valid).none { it.contains("recurring") })
     }
 
     @Test

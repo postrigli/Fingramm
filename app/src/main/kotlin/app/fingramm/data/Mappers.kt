@@ -116,6 +116,9 @@ fun RecurringTemplateEntity.toDomain() = RecurringTemplate(
     dayOfMonth = dayOfMonth,
     nextDueDate = nextDueDate,
     active = active,
+    frequency = frequency,
+    weekdays = weekdaysFromMask(weekdaysMask),
+    notifyAtMinute = notifyAtMinute,
 )
 
 fun RecurringTemplate.toEntity() = RecurringTemplateEntity(
@@ -128,7 +131,18 @@ fun RecurringTemplate.toEntity() = RecurringTemplateEntity(
     dayOfMonth = dayOfMonth,
     nextDueDate = nextDueDate,
     active = active,
+    frequency = frequency,
+    weekdaysMask = weekdaysToMask(weekdays),
+    notifyAtMinute = notifyAtMinute,
 )
+
+/** Дни недели ISO (1–7) → битовая маска (бит 0 — понедельник). Значения вне 1–7 игнорируются. */
+fun weekdaysToMask(weekdays: Set<Int>): Int =
+    weekdays.filter { it in 1..WEEK_DAYS }.fold(0) { mask, day -> mask or (1 shl (day - 1)) }
+
+fun weekdaysFromMask(mask: Int): Set<Int> = (1..WEEK_DAYS).filter { mask and (1 shl (it - 1)) != 0 }.toSet()
+
+private const val WEEK_DAYS = 7
 
 fun GoalEntity.toDomain() = Goal(id, title, targetMinor, savedMinor, deadline, horizon, createdAt)
 

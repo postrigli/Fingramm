@@ -41,6 +41,19 @@ jobs:
         run: ./gradlew lintRelease assembleRelease
       - name: Сборка debug-APK (подписан отладочным ключом, устанавливается на телефон)
         run: ./gradlew assembleDebug
+      - name: Схемы Room закоммичены
+        # Сборка выгружает схему БД в app/schemas. Если версия схемы выросла, а новый файл не закоммичен,
+        # MigrationTest не найдёт его. Тогда файл печатается сжатым в base64: python3 -c "import base64,gzip,sys;
+        # sys.stdout.buffer.write(gzip.decompress(base64.b64decode(sys.stdin.read())))" < строка > файл.json
+        run: |
+          if [ -n "$(git status --porcelain -- app/schemas)" ]; then
+            echo "::error::Схемы Room в app/schemas не закоммичены (или изменились). Закоммитьте их."
+            git status --porcelain -- app/schemas
+            for f in $(git status --porcelain -- app/schemas | awk '{print $2}'); do
+              echo "=== $f"; sha256sum "$f"; gzip -9n -c "$f" | base64 -w0; echo
+            done
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -56,6 +56,10 @@ fun formatDateFull(date: LocalDate): String =
 
 fun formatWeekday(date: LocalDate): String = date.dayOfWeek.getDisplayName(TextStyle.FULL, ru)
 
+/** Короткое название дня недели заглавными: «ПН», «ВТ», … «ВС». */
+fun weekdayShort(isoDay: Int): String =
+    DayOfWeek.of(isoDay).getDisplayName(TextStyle.SHORT_STANDALONE, ru).uppercase(ru)
+
 fun weekdayName(isoDay: Int): String = DayOfWeek.of(isoDay).getDisplayName(TextStyle.FULL_STANDALONE, ru)
 
 fun formatTime(hour: Int, minute: Int): String = String.format(Locale.ROOT, "%02d:%02d", hour, minute)

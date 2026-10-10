@@ -19,6 +19,7 @@ import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CategoryKind
 import app.fingramm.domain.model.DefaultCategories
 import app.fingramm.domain.model.GoalHorizon
+import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
@@ -552,5 +553,59 @@ class RepositoriesTest {
         assertEquals(25, state.startDay)
         assertEquals(40_000L, state.expensesMinor)
         assertEquals(70_000L, state.incomeMinor)
+    }
+
+    // ---------- Регулярные операции по дням недели ----------
+
+    private fun weeklyTemplate(next: LocalDate) = template(next).copy(
+        dayOfMonth = 1,
+        frequency = RecurrenceFrequency.WEEKLY,
+        weekdays = setOf(1, 3, 5),
+        notifyAtMinute = 8 * 60 + 30,
+    )
+
+    @Test
+    fun aWeeklyTemplateKeepsItsDaysAndNotificationTime() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12)))
+        val saved = checkNotNull(recurring.get(id))
+        assertEquals(RecurrenceFrequency.WEEKLY, saved.frequency)
+        assertEquals(setOf(1, 3, 5), saved.weekdays)
+        assertEquals(8 * 60 + 30, saved.notifyAtMinute)
+    }
+
+    @Test
+    fun aTemplateWithoutNotificationStaysWithoutIt() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 10, 5)))
+        val saved = checkNotNull(recurring.get(id))
+        assertEquals(RecurrenceFrequency.MONTHLY, saved.frequency)
+        assertEquals(emptySet<Int>(), saved.weekdays)
+        assertEquals(null, saved.notifyAtMinute)
+    }
+
+    @Test
+    fun handlingAWeeklyOccurrenceMovesItToTheNextSelectedWeekday() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12))) // понедельник
+        recurring.confirm(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 12)), 1)
+        assertEquals(LocalDate.of(2026, 10, 14), recurring.get(id)?.nextDueDate) // среда
+        recurring.skip(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 14)))
+        assertEquals(LocalDate.of(2026, 10, 16), recurring.get(id)?.nextDueDate) // пятница
+        recurring.skip(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 16)))
+        assertEquals(LocalDate.of(2026, 10, 19), recurring.get(id)?.nextDueDate) // снова понедельник
+        val created = transactions.observe(TransactionFilter(), categories.categories.first(), 10).first()
+        assertEquals(1, created.size) // создана только подтверждённая; пропущенные операций не создают
+    }
+
+    @Test
+    fun weeklyTemplatesSurviveBackupAndRestore() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12)))
+        val saved = checkNotNull(recurring.get(id))
+        val snapshot = backup.snapshot()
+        backup.wipe()
+        backup.importData(snapshot, ImportMode.REPLACE)
+        assertEquals(saved, recurring.templates.first().single())
     }
 }

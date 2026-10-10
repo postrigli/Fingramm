@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.domain.model.CurrencyCode
+import app.fingramm.security.ExternalFlowGuard
 import app.fingramm.ui.navigation.Routes
 import app.fingramm.widget.QuickAction
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,10 +13,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Состояние приложения верхнего уровня: куда вести пользователя, какая валюта, заблокировано ли. */
@@ -23,6 +26,7 @@ import javax.inject.Inject
 class AppViewModel @Inject constructor(
     budgetRepository: BudgetRepository,
     settings: SettingsRepository,
+    private val externalFlow: ExternalFlowGuard,
 ) : ViewModel() {
     /** Стартовый маршрут определяется один раз по первому прочитанному состоянию; null — ещё читаем. */
     val startRoute: StateFlow<String?> = flow {
@@ -37,7 +41,21 @@ class AppViewModel @Inject constructor(
         .map { it?.currency ?: CurrencyCode.RUB }
         .stateIn(viewModelScope, SharingStarted.Eagerly, CurrencyCode.RUB)
 
+    /** Пока блокировки нет, сессия считается открытой; см. [onBackgrounded] и init. */
     private val unlocked = MutableStateFlow(false)
+    private var lockEnabled = false
+
+    init {
+        viewModelScope.launch {
+            settings.settings.map { it.lockEnabled }.distinctUntilChanged().collect { enabled ->
+                lockEnabled = enabled
+                // Блокировка выключена: подтверждать нечего, сессия открыта. Поэтому включение блокировки в
+                // настройках не запирает приложение тут же: пользователь только что подтвердил себя отпечатком,
+                // а экран заблокируется, когда приложение действительно уйдёт в фон.
+                if (!enabled) unlocked.value = true
+            }
+        }
+    }
 
     /** Нужно ли показать экран блокировки; null — настройки ещё читаются. */
     val locked: StateFlow<Boolean?> = combine(settings.settings.map { it.lockEnabled }, unlocked) { enabled, open ->
@@ -64,8 +82,12 @@ class AppViewModel @Inject constructor(
         unlocked.value = true
     }
 
-    /** Приложение ушло в фон — при следующем открытии снова потребуется подтверждение. */
+    /**
+     * Приложение ушло в фон — при следующем открытии снова потребуется подтверждение. Не считается уходом в фон
+     * системное окно, которое открыло само приложение (выбор файла): [ExternalFlowGuard].
+     */
     fun onBackgrounded() {
+        if (!lockEnabled || externalFlow.consume()) return
         unlocked.value = false
     }
 }

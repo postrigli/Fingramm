@@ -8,6 +8,7 @@ import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.recurring.PendingOccurrence
 import app.fingramm.domain.recurring.RecurringSchedule
+import app.fingramm.domain.recurring.recurrence
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -33,7 +34,7 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 
-    /** Подтверждение ожидающего списания: создаёт операцию и сдвигает шаблон на следующий месяц. */
+    /** Подтверждение ожидающего списания: создаёт операцию и сдвигает шаблон на следующую дату по его правилу. */
     suspend fun confirm(occurrence: PendingOccurrence, nowMillis: Long) {
         db.withTransaction {
             val template = dao.getById(occurrence.template.id) ?: return@withTransaction
@@ -63,7 +64,8 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
         val template = dao.getById(templateId) ?: return
         // Шаблон сдвигается только если обработана именно ближайшая дата (защита от двойного нажатия).
         if (template.nextDueDate == handledDue) {
-            dao.update(template.copy(nextDueDate = RecurringSchedule.nextAfter(handledDue, template.dayOfMonth)))
+            val next = RecurringSchedule.nextAfter(handledDue, template.toDomain().recurrence)
+            dao.update(template.copy(nextDueDate = next))
         }
     }
 }

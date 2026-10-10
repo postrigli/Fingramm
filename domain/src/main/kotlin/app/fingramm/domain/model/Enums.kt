@@ -42,3 +42,7 @@ public enum class ReminderMode { DAILY_EVENING, WEEKLY, OFF }
 /** Главная цель на год из опроса. */
 @Serializable
 public enum class MainGoalKind { CUSHION, PAY_OFF_DEBT, VACATION, START_INVESTING, OTHER }
+
+/** Как повторяется регулярная операция: раз в месяц в выбранный день или по выбранным дням недели. */
+@Serializable
+public enum class RecurrenceFrequency { MONTHLY, WEEKLY }

@@ -33,10 +33,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun goalDao(): GoalDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         const val NAME = "fingramm.db"
 
         /** Миграции между версиями схемы. Для каждой — тест в androidTest/MigrationTest. */
-        val MIGRATIONS: Array<androidx.room.migration.Migration> = emptyArray()
+        val MIGRATIONS: Array<androidx.room.migration.Migration> = arrayOf(MIGRATION_1_2)
     }
 }
