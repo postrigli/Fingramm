@@ -491,4 +491,18 @@
     <string name="notification_title">Семейный бюджет</string>
     <string name="notification_text_daily">Как прошёл день? Внесите траты — это займёт минуту.</string>
     <string name="notification_text_weekly">Неделя позади — самое время обновить учёт.</string>
+
+    <!-- Виджет рабочего стола -->
+    <string name="widget_description">Быстрое добавление дохода или расхода</string>
+    <string name="widget_title">Добавить операцию</string>
+    <string name="widget_expense">Расход</string>
+    <string name="widget_income">Доход</string>
+    <string name="widget_expense_glyph">−</string>
+    <string name="widget_income_glyph">+</string>
+    <string name="widget_expense_cd">Добавить расход</string>
+    <string name="widget_income_cd">Добавить доход</string>
+    <string name="widget_open_transactions">Операции</string>
+    <string name="widget_open_dashboard">Сводка</string>
+    <string name="widget_open_transactions_cd">Открыть список операций</string>
+    <string name="widget_open_dashboard_cd">Открыть сводку</string>
 </resources>

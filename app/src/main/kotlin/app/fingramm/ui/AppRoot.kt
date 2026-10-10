@@ -18,13 +18,19 @@ fun AppRoot(viewModel: AppViewModel) {
     val locked by viewModel.locked.collectAsStateWithLifecycle()
     val hasProfile by viewModel.hasProfile.collectAsStateWithLifecycle()
     val currency by viewModel.currency.collectAsStateWithLifecycle()
+    val pendingAction by viewModel.pendingAction.collectAsStateWithLifecycle()
     val route = start
     when {
         route == null || locked == null ->
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
         locked == true -> LockScreen(onUnlock = viewModel::unlock)
         else -> CompositionLocalProvider(LocalCurrency provides currency) {
-            AppNavigation(startRoute = route, hasProfile = hasProfile)
+            AppNavigation(
+                startRoute = route,
+                hasProfile = hasProfile,
+                pendingAction = pendingAction,
+                onActionHandled = viewModel::consumeAction,
+            )
         }
     }
 }

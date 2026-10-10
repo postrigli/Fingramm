@@ -1,5 +1,7 @@
 package app.fingramm.ui.navigation
 
+import app.fingramm.domain.model.TransactionType
+
 /** Маршруты навигации. Параметры редактирования — необязательные query-аргументы (id < 0 — новая запись). */
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -8,7 +10,7 @@ object Routes {
     const val GOALS = "goals"
     const val MORE = "more"
 
-    const val TRANSACTION_EDIT = "transaction/edit?id={id}"
+    const val TRANSACTION_EDIT = "transaction/edit?id={id}&type={type}"
     const val GOAL_EDIT = "goal/edit?id={id}"
     const val CATEGORIES = "categories"
     const val CATEGORY_EDIT = "category/edit?id={id}&type={type}"
@@ -22,7 +24,9 @@ object Routes {
 
     val topLevel = listOf(DASHBOARD, TRANSACTIONS, GOALS, MORE)
 
-    fun transactionEdit(id: Long? = null) = "transaction/edit?id=${id ?: NEW}"
+    /** [type] задаёт тип новой операции (из виджета); для существующей записи игнорируется. */
+    fun transactionEdit(id: Long? = null, type: TransactionType? = null) =
+        "transaction/edit?id=${id ?: NEW}" + (type?.let { "&type=${it.name}" } ?: "")
 
     fun goalEdit(id: Long? = null) = "goal/edit?id=${id ?: NEW}"
 

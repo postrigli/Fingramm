@@ -2,4 +2,12 @@
 <resources>
     <color name="window_background">#FFFBFE</color>
     <color name="ic_launcher_background">#1B6E5A</color>
+
+    <!-- Виджет рабочего стола: кнопки с белым текстом (контраст не ниже 6:1), поверхность следует системной теме. -->
+    <color name="widget_surface">#F1EDE8</color>
+    <color name="widget_surface_variant">#E1DBD3</color>
+    <color name="widget_on_surface">#1C1B1F</color>
+    <color name="widget_expense">#B3261C</color>
+    <color name="widget_income">#1B6E5A</color>
+    <color name="widget_on_accent">#FFFFFF</color>
 </resources>

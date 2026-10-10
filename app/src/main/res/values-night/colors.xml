@@ -2,4 +2,11 @@
 <resources>
     <color name="window_background">#1C1B1F</color>
     <color name="ic_launcher_background">#1B6E5A</color>
+
+    <color name="widget_surface">#2B2930</color>
+    <color name="widget_surface_variant">#3C3A42</color>
+    <color name="widget_on_surface">#E6E1E5</color>
+    <color name="widget_expense">#B3261C</color>
+    <color name="widget_income">#1B6E5A</color>
+    <color name="widget_on_accent">#FFFFFF</color>
 </resources>

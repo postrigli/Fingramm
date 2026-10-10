@@ -50,6 +50,7 @@ import app.fingramm.ui.survey.SurveyEditScreen
 import app.fingramm.ui.survey.SurveySummaryScreen
 import app.fingramm.ui.transactions.TransactionEditScreen
 import app.fingramm.ui.transactions.TransactionsScreen
+import app.fingramm.widget.QuickAction
 
 private data class TopLevelItem(val route: String, val label: Int, val icon: ImageVector)
 
@@ -67,7 +68,12 @@ private fun idArgument() = navArgument("id") {
 
 /** Граф навигации и нижняя панель (Сводка · Операции · Цели · Ещё). */
 @Composable
-fun AppNavigation(startRoute: String, hasProfile: Boolean?) {
+fun AppNavigation(
+    startRoute: String,
+    hasProfile: Boolean?,
+    pendingAction: QuickAction? = null,
+    onActionHandled: () -> Unit = {},
+) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
@@ -137,9 +143,17 @@ fun AppNavigation(startRoute: String, hasProfile: Boolean?) {
                     onOpenAbout = { navController.navigate(Routes.ABOUT) },
                 )
             }
-            composable(Routes.TRANSACTION_EDIT, arguments = listOf(idArgument())) {
-                TransactionEditScreen(onBack = { navController.popBackStack() })
-            }
+            composable(
+                Routes.TRANSACTION_EDIT,
+                arguments = listOf(
+                    idArgument(),
+                    navArgument("type") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { TransactionEditScreen(onBack = { navController.popBackStack() }) }
             composable(Routes.GOAL_EDIT, arguments = listOf(idArgument())) {
                 GoalEditScreen(onBack = { navController.popBackStack() })
             }
@@ -190,6 +204,17 @@ fun AppNavigation(startRoute: String, hasProfile: Boolean?) {
             composable(Routes.ABOUT) { AboutScreen(onBack = { navController.popBackStack() }) }
         }
     }
+
+    // Действие из виджета выполняем, когда граф навигации уже готов (backStack != null). Это место после Scaffold
+    // намеренно: эффект стартует позже NavHost. Пока приложение заблокировано, AppNavigation не показывается,
+    // и действие ждёт разблокировки. Без профиля (онбординг) добавлять нечего — действие сбрасывается.
+    val graphReady = backStack != null
+    LaunchedEffect(pendingAction, hasProfile, graphReady) {
+        if (pendingAction != null && hasProfile != null && graphReady) {
+            if (hasProfile) navController.perform(pendingAction)
+            onActionHandled()
+        }
+    }
 }
 
 private fun NavHostController.navigateTopLevel(route: String) {
@@ -203,6 +228,28 @@ private fun NavHostController.navigateTopLevel(route: String) {
 private fun NavHostController.clearAndGo(route: String) {
     navigate(route) {
         popUpTo(0) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+/**
+ * Открывает экран, заказанный виджетом. Сначала возвращаемся на сводку (без сохранения состояния, чтобы
+ * брошенная форма не «воскресла» позже), затем — нужный экран: «Назад» из формы ведёт на сводку, а не из приложения.
+ */
+private fun NavHostController.perform(action: QuickAction) {
+    when (action) {
+        is QuickAction.AddTransaction -> {
+            goFresh(Routes.DASHBOARD)
+            navigate(Routes.transactionEdit(type = action.type))
+        }
+        QuickAction.OpenTransactions -> goFresh(Routes.TRANSACTIONS)
+        QuickAction.OpenDashboard -> goFresh(Routes.DASHBOARD)
+    }
+}
+
+private fun NavHostController.goFresh(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id)
         launchSingleTop = true
     }
 }

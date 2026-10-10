@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: размер по умолчанию 4×2 ячейки, максимум 5×3 (с запасом на разные сетки лаунчеров). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_quick_add"
+    android:maxResizeHeight="200dp"
+    android:maxResizeWidth="340dp"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="250dp"
+    android:minWidth="250dp"
+    android:previewLayout="@layout/widget_quick_add"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="4"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

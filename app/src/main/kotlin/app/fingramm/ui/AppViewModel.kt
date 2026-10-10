@@ -6,6 +6,7 @@ import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.ui.navigation.Routes
+import app.fingramm.widget.QuickAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,6 +43,22 @@ class AppViewModel @Inject constructor(
     val locked: StateFlow<Boolean?> = combine(settings.settings.map { it.lockEnabled }, unlocked) { enabled, open ->
         enabled && !open
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _pendingAction = MutableStateFlow<QuickAction?>(null)
+
+    /**
+     * Действие, заказанное виджетом, которое ещё не выполнено. Пока приложение заблокировано, навигации нет,
+     * и действие просто ждёт разблокировки.
+     */
+    val pendingAction: StateFlow<QuickAction?> = _pendingAction
+
+    fun offerAction(action: QuickAction) {
+        _pendingAction.value = action
+    }
+
+    fun consumeAction() {
+        _pendingAction.value = null
+    }
 
     fun unlock() {
         unlocked.value = true

@@ -51,7 +51,14 @@ class TransactionEditViewModel @Inject constructor(
 ) : ViewModel() {
     private val id: Long? = savedStateHandle.get<Long>("id")?.takeIf { it > 0 }
 
-    private val _state = MutableStateFlow(TransactionFormState(date = LocalDate.now(clock), editingId = id))
+    /** Тип новой операции: приходит из виджета («Расход»/«Доход»), по умолчанию расход. */
+    private val initialType: TransactionType = savedStateHandle.get<String>("type")
+        ?.let { name -> TransactionType.entries.firstOrNull { it.name == name } }
+        ?: TransactionType.EXPENSE
+
+    private val _state = MutableStateFlow(
+        TransactionFormState(type = initialType, date = LocalDate.now(clock), editingId = id),
+    )
     val state: StateFlow<TransactionFormState> = _state.asStateFlow()
 
     private val _done = Channel<Unit>(Channel.BUFFERED)
@@ -66,7 +73,7 @@ class TransactionEditViewModel @Inject constructor(
             allCategories = categoryRepository.categories.first()
             val existing = id?.let { transactions.get(it) }
             original = existing
-            val type = existing?.type ?: TransactionType.EXPENSE
+            val type = existing?.type ?: initialType
             usage = statsRepository.categoryUsage(type).first()
             _state.update {
                 it.copy(
