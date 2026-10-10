@@ -79,5 +79,6 @@ internal object TestData {
         ),
         categoryLimits = listOf(CategoryLimit(3, 500_000)),
         reminder = ReminderSettings(ReminderMode.WEEKLY, 19, 15, 6),
+        monthStartDay = 25,
     )
 }

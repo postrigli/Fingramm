@@ -1,5 +1,7 @@
 package app.fingramm.domain.backup
 
+import app.fingramm.domain.period.BudgetPeriod
+
 /** Проверка целостности данных бэкапа перед импортом. Возвращает человекочитаемые замечания. */
 public object BackupValidator {
     private const val MAX_HOUR = 23
@@ -9,7 +11,7 @@ public object BackupValidator {
 
     public fun validate(data: BackupData): List<String> =
         profile(data) + uniqueIds(data) + transactions(data) + templates(data) + limits(data) + goals(data) +
-            nonNegativeAmounts(data) + reminder(data)
+            nonNegativeAmounts(data) + settings(data)
 
     private fun profile(data: BackupData): List<String> {
         val issues = mutableListOf<String>()
@@ -78,9 +80,14 @@ public object BackupValidator {
             data.assets.filter { it.valueMinor < 0 }.map { "asset ${it.id}: стоимость < 0" } +
             data.debts.filter { it.monthlyPaymentMinor < 0 }.map { "debt ${it.id}: платёж < 0" }
 
-    private fun reminder(data: BackupData): List<String> {
+    /** Настройки, которые хранятся вне таблиц: время напоминаний и день начала месяца. */
+    private fun settings(data: BackupData): List<String> {
         val r = data.reminder
-        val valid = r.hour in 0..MAX_HOUR && r.minute in 0..MAX_MINUTE && r.weekday in 1..MAX_WEEKDAY
-        return if (valid) emptyList() else listOf("reminder: время вне допустимого диапазона")
+        val reminderValid = r.hour in 0..MAX_HOUR && r.minute in 0..MAX_MINUTE && r.weekday in 1..MAX_WEEKDAY
+        val dayValid = data.monthStartDay in BudgetPeriod.DEFAULT_START_DAY..BudgetPeriod.MAX_START_DAY
+        return listOfNotNull(
+            "reminder: время вне допустимого диапазона".takeUnless { reminderValid },
+            "monthStartDay: день начала месяца вне диапазона 1–${BudgetPeriod.MAX_START_DAY}".takeUnless { dayValid },
+        )
     }
 }

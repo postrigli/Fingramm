@@ -22,6 +22,9 @@ ktlint_standard_string-template-indent = disabled
 ktlint_standard_function-expression-body = disabled
 ktlint_standard_if-else-wrapping = disabled
 ktlint_standard_property-naming = disabled
+# Привычная форма Hilt/Dagger: `class Foo @Inject constructor(...)`.
+ktlint_standard_annotation = disabled
+ktlint_standard_class-signature = disabled
 
 [*.{xml,yml,yaml,toml,md}]
 indent_size = 2

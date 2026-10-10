@@ -95,6 +95,31 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `month start day survives a round trip`() {
+        val data = TestData.backup().copy(monthStartDay = 17)
+        val decoded = BackupCodec.decode(BackupCodec.encode(BackupFile(data = data)))
+        assertEquals(17, (decoded as BackupDecodeResult.Success).file.data.monthStartDay)
+    }
+
+    @Test
+    fun `a file without month start day is the calendar month`() {
+        val json = """{"app":"fingramm","schemaVersion":1,"data":{}}"""
+        val decoded = BackupCodec.decode(json) as BackupDecodeResult.Success
+        assertEquals(1, decoded.file.data.monthStartDay)
+    }
+
+    @Test
+    fun `month start day outside 1 to 28 is invalid`() {
+        listOf(0, 29, -1).forEach { day ->
+            val issues = BackupValidator.validate(TestData.backup().copy(monthStartDay = day))
+            assertTrue("day $day", issues.any { it.contains("monthStartDay") })
+        }
+        listOf(1, 28).forEach { day ->
+            assertTrue(BackupValidator.validate(TestData.backup().copy(monthStartDay = day)).isEmpty())
+        }
+    }
+
+    @Test
     fun `valid data has no issues`() {
         assertTrue(BackupValidator.validate(TestData.backup()).isEmpty())
     }

@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
+    alias(libs.plugins.room) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
 }
@@ -19,5 +20,6 @@ subprojects {
         buildUponDefaultConfig = true
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         parallel = true
+        source.setFrom(files("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin"))
     }
 }

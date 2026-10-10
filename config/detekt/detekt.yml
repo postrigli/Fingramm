@@ -16,6 +16,7 @@ complexity:
     active: true
     thresholdInFiles: 25
     thresholdInClasses: 25
+    thresholdInInterfaces: 25
     ignoreAnnotated: ['Composable']
   ComplexCondition:
     threshold: 5

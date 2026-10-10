@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Все строки интерфейса. Язык по умолчанию — русский; локализации добавляются в values-xx/strings.xml.
+     В строках с аргументами литерал процента пишется как %%, без аргументов — как %. -->
+<resources>
+    <string name="app_name">Fingramm</string>
+
+    <!-- Общие -->
+    <string name="action_back">Назад</string>
+    <string name="action_next">Далее</string>
+    <string name="action_start">Начать</string>
+    <string name="action_finish">Готово</string>
+    <string name="action_skip">Пропустить</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_ok">ОК</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_delete_row">Удалить строку</string>
+    <string name="action_edit">Изменить</string>
+    <string name="action_clear">Сбросить</string>
+    <string name="action_undo">Отменить</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="loading">Загрузка…</string>
+    <string name="income">Доходы</string>
+    <string name="expenses">Расходы</string>
+    <string name="expense">Расход</string>
+    <string name="value_undefined">—</string>
+    <string name="months_format">%1$s мес.</string>
+    <string name="month_previous">Предыдущий месяц</string>
+    <string name="month_next">Следующий месяц</string>
+    <string name="date_today">Сегодня</string>
+    <string name="date_not_set">не задан</string>
+
+    <!-- Нижняя панель -->
+    <string name="nav_dashboard">Сводка</string>
+    <string name="nav_transactions">Операции</string>
+    <string name="nav_goals">Цели</string>
+    <string name="nav_more">Ещё</string>
+
+    <!-- Ошибки валидации -->
+    <string name="error_required">Заполните поле</string>
+    <string name="error_must_be_positive">Значение должно быть больше нуля</string>
+    <string name="error_date_in_past">Срок должен быть в будущем</string>
+    <string name="error_out_of_range">Значение вне допустимого диапазона</string>
+    <string name="error_family_size">Укажите число от %1$d до %2$d</string>
+    <string name="error_children_count">Детей должно быть не меньше одного и меньше, чем человек в семье</string>
+    <string name="error_amount_positive">Введите сумму больше нуля</string>
+    <string name="error_category_required">Выберите категорию</string>
+
+    <!-- Опрос: общее -->
+    <string name="survey_progress">Вопрос %1$d из %2$d</string>
+    <string name="survey_why_title">Зачем мы это спрашиваем</string>
+    <string name="survey_optional">Необязательно</string>
+    <string name="survey_per_month">Сумма в месяц</string>
+    <string name="survey_total_per_month">Итого в месяц: %1$s</string>
+    <string name="survey_item_name">Название</string>
+    <string name="survey_add_category">Добавить категорию</string>
+    <string name="survey_mode_total">Одной суммой</string>
+    <string name="survey_mode_categories">По категориям</string>
+
+    <string name="survey_title_welcome">Давайте наведём порядок в семейных финансах</string>
+    <string name="survey_title_family">Ваша семья</string>
+    <string name="survey_title_income">Доходы</string>
+    <string name="survey_title_mandatory">Обязательные расходы</string>
+    <string name="survey_title_variable">Переменные расходы</string>
+    <string name="survey_title_debts">Кредиты и долги</string>
+    <string name="survey_title_cushion">Подушка и сбережения</string>
+    <string name="survey_title_assets">Ценные активы</string>
+    <string name="survey_title_main_goal">Главная цель на год</string>
+    <string name="survey_title_mid_goals">Цели на 2–5 лет</string>
+    <string name="survey_title_habits">Привычки и напоминания</string>
+
+    <string name="survey_welcome_body">Ответьте на несколько простых вопросов — приложение посчитает ключевые финансовые показатели семьи и объяснит, что они значат и какой уровень считается нормой. Дальше вы сами ведёте учёт доходов и расходов.</string>
+    <string name="survey_welcome_privacy">Все данные хранятся только на вашем устройстве. Приложение не выходит в интернет и не требует регистрации.</string>
+    <string name="survey_currency_title">Основная валюта</string>
+    <string name="survey_currency_hint">Нужна, чтобы подписать суммы. Мультивалютный учёт не поддерживается: бюджет ведётся в одной валюте.</string>
+    <string name="survey_currency_change_warning">Суммы не пересчитываются: изменится только обозначение валюты.</string>
+    <string name="survey_disclaimer_short">Показатели и ориентиры — общепринятые, а не персональная финансовая рекомендация.</string>
+    <string name="onboarding_restore">У меня есть резервная копия</string>
+
+    <string name="survey_why_family">Размер семьи нужен для контекста и подсказок. На расчёты показателей он не влияет.</string>
+    <string name="survey_family_size">Сколько человек в семье</string>
+    <string name="survey_family_size_hint">Считая вас</string>
+    <string name="survey_has_children">Есть ли дети?</string>
+    <string name="survey_children_count">Сколько детей</string>
+
+    <string name="survey_why_income">Доход — основа всех показателей: от него считаются свободный поток, норма сбережений и долговая нагрузка.</string>
+    <string name="survey_income_hint">Средний суммарный доход семьи в месяц: зарплаты, премии, подработки, аренда, прочие регулярные поступления. Можно ввести несколькими строками — по источникам.</string>
+    <string name="survey_income_name">Источник (например, зарплата)</string>
+    <string name="survey_add_income">Добавить источник дохода</string>
+
+    <string name="survey_why_mandatory">Обязательные расходы показывают, сколько денег «зарезервировано» жизнью. От них зависят доля обязательных трат и подушка в месяцах.</string>
+    <string name="survey_mandatory_hint">Аренда или ипотека, коммунальные услуги, связь, транспорт, базовые продукты. Платежи по кредитам укажите отдельно на шаге «Кредиты и долги».</string>
+    <string name="survey_why_variable">Переменные расходы — то, что можно сократить без ущерба для базовых нужд. Именно здесь чаще всего находятся резервы для накоплений.</string>
+    <string name="survey_variable_hint">Еда вне дома, развлечения, одежда, подписки и тому подобное.</string>
+    <string name="survey_variable_unknown">Не знаю</string>
+    <string name="survey_variable_unknown_hint">Приложение пересчитает по вашим операциям, когда пройдёт полный месяц учёта.</string>
+
+    <string name="survey_why_debts">Платежи по долгам определяют долговую нагрузку — один из главных индикаторов финансового риска.</string>
+    <string name="survey_has_debts">Есть ли кредиты, рассрочки, долги?</string>
+    <string name="survey_debt_payment">Общий платёж в месяц</string>
+    <string name="survey_debt_payment_hint">По всем кредитам и рассрочкам вместе</string>
+    <string name="survey_debt_balance">Общий остаток долга</string>
+
+    <string name="survey_why_cushion">Подушка — запас на случай потери дохода или непредвиденных трат. Приложение само переведёт её в месяцы расходов.</string>
+    <string name="survey_has_cushion">Есть ли у вас финансовая подушка?</string>
+    <string name="survey_cushion_amount">Сумма подушки</string>
+    <string name="survey_cushion_hint">В деньгах — количество месяцев мы посчитаем сами. Подушка считается частью сбережений.</string>
+    <string name="survey_savings_title">Где хранятся свободные сбережения</string>
+    <string name="survey_savings_hint">Выберите места хранения и, если хотите, укажите суммы — они войдут в чистый капитал.</string>
+    <string name="savings_cash">Наличные</string>
+    <string name="savings_account">Накопительный счёт</string>
+    <string name="savings_deposits">Вклады</string>
+    <string name="savings_investments">Инвестиции</string>
+
+    <string name="survey_why_assets">Автомобиль, дача, техника — это часть семейного капитала. Решите сами, учитывать ли их в чистом капитале.</string>
+    <string name="survey_assets_hint">Необязательный шаг: название и оценочная стоимость.</string>
+    <string name="survey_asset_name">Название (например, автомобиль)</string>
+    <string name="survey_asset_value">Оценочная стоимость</string>
+    <string name="survey_add_asset">Добавить актив</string>
+    <string name="survey_assets_include">Учитывать в чистом капитале</string>
+    <string name="survey_assets_include_hint">Если выключено, активы сохранятся, но в расчёт не войдут</string>
+
+    <string name="survey_why_main_goal">Цель превращает цифры в план: приложение покажет прогресс и подскажет, сколько откладывать, чтобы успеть вовремя.</string>
+    <string name="survey_goal_title">Название цели</string>
+    <string name="survey_goal_target">Целевая сумма</string>
+    <string name="survey_goal_deadline">Срок</string>
+    <string name="goal_kind_cushion">Создать финансовую подушку</string>
+    <string name="goal_kind_debt">Закрыть кредит</string>
+    <string name="goal_kind_vacation">Накопить на отпуск</string>
+    <string name="goal_kind_invest">Начать инвестировать</string>
+    <string name="goal_kind_other">Другое</string>
+
+    <string name="survey_why_mid_goals">Крупные цели на несколько лет — жильё, автомобиль, образование детей — требуют регулярных накоплений уже сейчас.</string>
+    <string name="survey_mid_goals_hint">Название, сумма и срок. Шаг можно пропустить и добавить цели позже на вкладке «Цели».</string>
+    <string name="survey_add_goal">Добавить цель</string>
+
+    <string name="survey_why_habits">Поможет подобрать подсказки и настроить напоминания так, чтобы они не раздражали.</string>
+    <string name="survey_experience_title">Как вы вели учёт раньше</string>
+    <string name="experience_never">Никогда не вёл(а)</string>
+    <string name="experience_excel">В таблицах (Excel и подобных)</string>
+    <string name="experience_apps">В приложениях</string>
+    <string name="experience_quit">Пробовал(а), но бросил(а)</string>
+    <string name="survey_time_title">Сколько времени готовы уделять</string>
+    <string name="time_daily">Каждый день</string>
+    <string name="time_few_minutes">Пару минут в день</string>
+    <string name="time_weekly">Раз в неделю</string>
+    <string name="time_monthly">Раз в месяц</string>
+    <string name="survey_reminder_title">Напоминания</string>
+    <string name="survey_reminder_hint">Мягкие уведомления без давления. Разрешение на показ запросим, когда вы выберете режим.</string>
+    <string name="reminder_daily">Вечернее уведомление каждый день</string>
+    <string name="reminder_weekly">Мягкое напоминание раз в неделю</string>
+    <string name="reminder_off">Без уведомлений</string>
+
+    <string-array name="survey_mandatory_items">
+        <item>Аренда или ипотека</item>
+        <item>Коммунальные услуги</item>
+        <item>Связь и интернет</item>
+        <item>Транспорт</item>
+        <item>Базовые продукты</item>
+    </string-array>
+    <string-array name="survey_variable_items">
+        <item>Кафе и рестораны</item>
+        <item>Развлечения</item>
+        <item>Одежда</item>
+        <item>Подписки</item>
+        <item>Прочее</item>
+    </string-array>
+
+    <string name="default_income_name">Доход</string>
+    <string name="default_asset_name">Актив</string>
+    <string name="default_debt_name">Кредиты и долги</string>
+
+    <!-- Сводка ответов -->
+    <string name="survey_summary_title">Ответы опроса</string>
+    <string name="survey_summary_hint">Измените любой блок — показатели пересчитаются сразу.</string>
+    <string name="survey_summary_family">Человек в семье: %1$d, детей: %2$d</string>
+    <string name="survey_summary_per_month">%1$s в месяц</string>
+    <string name="survey_summary_variable_unknown">Не указаны — считаем по вашим операциям</string>
+    <string name="survey_summary_no_debts">Долгов нет</string>
+    <string name="survey_summary_cushion">Подушка: %1$s · сбережения: %2$s</string>
+    <string name="survey_summary_assets">Активов: %1$d</string>
+    <string name="survey_summary_not_set">Не указано</string>
+    <string name="survey_goals_note_title">Цели</string>
+    <string name="survey_goals_note">Цели редактируются на вкладке «Цели»: там же отмечается прогресс.</string>
+
+    <!-- Дашборд -->
+    <string name="dashboard_title">Ваша финансовая картина</string>
+    <string name="mode_plan">План</string>
+    <string name="mode_fact">Факт</string>
+    <string name="dashboard_fact_empty">За этот месяц ещё нет операций. Добавьте доходы и расходы на вкладке «Операции» — и фактические показатели появятся здесь.</string>
+    <string name="dashboard_fact_partial">Месяц ещё не закончился, показатели предварительные.</string>
+    <string name="dashboard_variable_unknown">Переменные расходы пока не учтены: вы ответили «не знаю». Через месяц учёта приложение оценит их по вашим операциям.</string>
+    <string name="dashboard_variable_estimated">Переменные расходы в плане оценены по вашим фактическим операциям за последние полные месяцы.</string>
+    <string name="dashboard_debt_balance_missing">Остаток долга не указан, поэтому чистый капитал может быть завышен. Укажите его в разделе «Ещё → Ответы опроса».</string>
+    <string name="dashboard_structure_title">Структура расходов</string>
+    <string name="dashboard_structure_empty">Данных для диаграммы пока нет.</string>
+    <string name="dashboard_structure_cd">Структура расходов</string>
+    <string name="dashboard_structure_center_plan">Доход в плане</string>
+    <string name="dashboard_structure_center_fact">Расходы</string>
+    <string name="structure_mandatory">Обязательные</string>
+    <string name="structure_variable">Переменные</string>
+    <string name="structure_debt">Платежи по долгам</string>
+    <string name="structure_free">Свободный поток</string>
+    <string name="structure_others">Остальное</string>
+    <string name="dashboard_bars_title">Доходы и расходы по месяцам</string>
+    <string name="dashboard_bars_empty">График появится, когда вы внесёте первые операции.</string>
+    <string name="dashboard_bars_cd">Доходы и расходы по месяцам</string>
+    <string name="dashboard_goals_title">Прогресс по целям</string>
+    <string name="dashboard_goals_empty">Целей пока нет. Добавьте цель — и мы покажем прогресс и прогноз.</string>
+    <string name="dashboard_goals_open">Открыть цели</string>
+    <string name="disclaimer_title">Важно знать</string>
+    <string name="disclaimer_full">Приложение показывает общепринятые ориентиры (например, подушка на 3–6 месяцев или долговая нагрузка до 30–35%) и помогает разобраться в собственных цифрах. Это не персональная финансовая, инвестиционная или налоговая рекомендация. Для решений о крупных вложениях и кредитах обращайтесь к квалифицированному специалисту.</string>
+    <string name="disclaimer_short">Ориентиры общепринятые и не являются персональной финансовой рекомендацией.</string>
+    <string name="disclaimer_ok">Понятно</string>
+
+    <string name="status_good">В норме</string>
+    <string name="status_attention">Внимание</string>
+    <string name="status_risk">Риск</string>
+    <string name="status_neutral">Нет оценки</string>
+
+    <string name="metric_help_cd">Подсказка: %1$s</string>
+    <string name="metric_help_what">Что это</string>
+    <string name="metric_help_how">Как считается</string>
+    <string name="metric_help_norm">Норма</string>
+    <string name="metric_help_tips">Как улучшить</string>
+
+    <string name="metric_fcf_title">Свободный денежный поток</string>
+    <string name="metric_fcf_what">Сколько денег остаётся в месяц после обязательных и переменных расходов и платежей по долгам. Именно из этих денег складываются сбережения и покупка целей.</string>
+    <string name="metric_fcf_how">Доход − обязательные расходы − переменные расходы − платежи по долгам.</string>
+    <string name="metric_fcf_norm">Должен быть больше нуля. Хорошо, когда остаётся %1$d–%2$d%% дохода и больше.</string>
+    <string name="metric_fcf_short_norm">Цель: больше 0, лучше %1$d–%2$d%% дохода</string>
+    <string name="metric_fcf_tip1">Найдите одну-две крупные статьи переменных расходов (кафе, подписки, спонтанные покупки) и задайте для них лимит.</string>
+    <string name="metric_fcf_tip2">Пересмотрите регулярные платежи: тарифы связи, страховки, подписки — часто есть более выгодные варианты.</string>
+    <string name="metric_fcf_tip3">Откладывайте сразу после получения дохода — «заплатите себе первым», а тратьте остаток.</string>
+
+    <string name="metric_savings_title">Норма сбережений</string>
+    <string name="metric_savings_what">Какую долю дохода семья откладывает. Чем она выше, тем быстрее растут подушка и капитал.</string>
+    <string name="metric_savings_how">(Доход − все расходы) ÷ доход, в процентах. Платежи по долгам входят в расходы.</string>
+    <string name="metric_savings_norm">Ориентир — откладывать %1$d–%2$d%% дохода и больше. Отрицательное значение означает, что расходы превышают доход.</string>
+    <string name="metric_savings_short_norm">Ориентир: %1$d–%2$d%% и выше</string>
+    <string name="metric_savings_tip1">Автоматизируйте накопления: регулярный перевод в день получения дохода.</string>
+    <string name="metric_savings_tip2">Начните с малого — даже 5% дохода лучше нуля — и повышайте долю при каждом росте дохода.</string>
+    <string name="metric_savings_tip3">Направляйте на накопления премии и подработки, не включая их в повседневный бюджет.</string>
+
+    <string name="metric_debt_title">Долговая нагрузка</string>
+    <string name="metric_debt_what">Какая часть дохода уходит на платежи по кредитам, рассрочкам и долгам.</string>
+    <string name="metric_debt_how">Платежи по долгам в месяц ÷ доход, в процентах.</string>
+    <string name="metric_debt_norm">Комфортная нагрузка — до %1$d%% дохода. Выше %2$d%% — зона риска: любая просадка дохода станет проблемой.</string>
+    <string name="metric_debt_short_norm">Норма: до %1$d%% дохода</string>
+    <string name="metric_debt_tip1">Сначала гасите долги с самой высокой ставкой, по остальным платите минимум.</string>
+    <string name="metric_debt_tip2">Не берите новые кредиты, пока нагрузка выше нормы. Рассрочки считаются так же, как кредиты.</string>
+    <string name="metric_debt_tip3">Рассмотрите рефинансирование под меньшую ставку — но сравнивайте полную стоимость, а не только размер платежа.</string>
+
+    <string name="metric_cushion_title">Финансовая подушка</string>
+    <string name="metric_cushion_what">На сколько месяцев привычной жизни хватит накоплений, если доход пропадёт.</string>
+    <string name="metric_cushion_how">Сумма подушки ÷ месячные расходы (обязательные + переменные + платежи по долгам).</string>
+    <string name="metric_cushion_norm">Ориентир — %1$d–%2$d месяцев расходов. Если доход нестабильный (фриланс, свой бизнес), стремитесь к %2$d месяцам и больше.</string>
+    <string name="metric_cushion_short_norm">Ориентир: %1$d–%2$d мес.</string>
+    <string name="metric_cushion_tip1">Начните с цели в один месяц расходов, затем доведите подушку до трёх.</string>
+    <string name="metric_cushion_tip2">Храните подушку на отдельном накопительном счёте или вкладе без ограничений на снятие.</string>
+    <string name="metric_cushion_tip3">Не вкладывайте подушку в рискованные активы: её задача — быть под рукой.</string>
+
+    <string name="metric_mandatory_title">Доля обязательных расходов</string>
+    <string name="metric_mandatory_what">Какая часть дохода уходит на то, от чего нельзя отказаться: жильё, коммунальные услуги, связь, транспорт, базовые продукты.</string>
+    <string name="metric_mandatory_how">Обязательные расходы ÷ доход, в процентах. Платежи по долгам считаются отдельно.</string>
+    <string name="metric_mandatory_norm">Ориентир — не больше %1$d%% дохода (правило 50/30/20: половина на нужды, 30%% на желания, 20%% на сбережения).</string>
+    <string name="metric_mandatory_short_norm">Ориентир: до %1$d%% дохода</string>
+    <string name="metric_mandatory_tip1">Проверьте, все ли «обязательные» траты действительно обязательны: тарифы, страховки, доставка продуктов.</string>
+    <string name="metric_mandatory_tip2">Самая крупная статья — жильё. Ищите способы снизить её: рефинансирование ипотеки, пересмотр условий аренды.</string>
+    <string name="metric_mandatory_tip3">Растите доход: при том же уровне обязательных трат их доля снизится.</string>
+
+    <string name="metric_net_worth_title">Чистый капитал</string>
+    <string name="metric_net_worth_what">Всё, чем семья владеет в ликвидной форме (и, по желанию, ценные вещи), за вычетом долгов.</string>
+    <string name="metric_net_worth_how">Ликвидные сбережения + (по выбору) ценные активы − остаток долгов. В режиме «Факт» к сбережениям добавляется накопленный результат по операциям.</string>
+    <string name="metric_net_worth_norm">Нормы нет: важна динамика — капитал должен расти от месяца к месяцу. Отрицательное значение означает, что долгов больше, чем накоплений.</string>
+    <string name="metric_net_worth_short_norm">Важна динамика, а не число</string>
+    <string name="metric_net_worth_tip1">Сверяйте капитал раз в месяц: рост важнее абсолютного значения.</string>
+    <string name="metric_net_worth_tip2">Не включайте в капитал то, что не готовы продать (например, единственное жильё).</string>
+    <string name="metric_net_worth_tip3">Сначала гасите дорогие долги: это гарантированная «доходность».</string>
+
+    <!-- Операции -->
+    <string name="transaction_add">Добавить операцию</string>
+    <string name="transaction_edit">Операция</string>
+    <string name="transaction_amount">Сумма</string>
+    <string name="transaction_category">Категория</string>
+    <string name="transaction_date">Дата</string>
+    <string name="transaction_note">Комментарий</string>
+    <string name="transaction_account">Счёт (необязательно)</string>
+    <string name="transaction_deleted">Операция удалена</string>
+    <string name="transaction_delete_title">Удалить операцию?</string>
+    <string name="transaction_delete_message">Показатели пересчитаются без этой операции.</string>
+    <string name="account_none">Не указан</string>
+    <string name="account_cash">Наличные</string>
+    <string name="account_card">Карта</string>
+    <string name="account_savings">Накопления</string>
+    <string name="category_unknown">Без категории</string>
+    <string name="transactions_empty_title">Операций пока нет</string>
+    <string name="transactions_empty_message">Вносите доходы и расходы — это занимает несколько секунд, а показатели станут точнее.</string>
+    <string name="transactions_nothing_found">Ничего не найдено</string>
+    <string name="transactions_nothing_found_hint">Измените период, фильтры или поисковый запрос.</string>
+    <string name="search_hint">Поиск по комментарию и категории</string>
+    <string name="period_this_month">Этот месяц</string>
+    <string name="period_last_month">Прошлый месяц</string>
+    <string name="period_all">Всё время</string>
+    <string name="period_custom">Свой период</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_category">Категория</string>
+    <string name="filter_all_categories">Все категории</string>
+    <string name="overview_title">Обзор месяца</string>
+    <string name="overview_balance">Остаток</string>
+    <string name="overview_vs_plan">План из опроса: доход %1$s, расходы %2$s</string>
+    <string name="overview_limits">Лимиты по категориям</string>
+    <string name="limit_ok">В пределах лимита</string>
+    <string name="limit_attention">Лимит почти исчерпан</string>
+    <string name="limit_exceeded">Лимит превышен</string>
+    <string name="pending_banner">Ожидают подтверждения: %1$d</string>
+    <string name="pending_review">Открыть</string>
+    <string name="pending_title">Ожидают подтверждения</string>
+    <string name="pending_hint">Регулярные операции, срок которых наступил. Подтвердите, чтобы добавить их в учёт, или пропустите.</string>
+    <string name="pending_confirm">Подтвердить</string>
+    <string name="pending_skip">Пропустить</string>
+
+    <!-- Регулярные операции -->
+    <string name="recurring_title">Регулярные операции</string>
+    <string name="recurring_add">Новая регулярная операция</string>
+    <string name="recurring_edit">Регулярная операция</string>
+    <string name="recurring_empty_title">Регулярных операций нет</string>
+    <string name="recurring_empty_message">Добавьте ежемесячные платежи и поступления — приложение напомнит о них и предложит внести одним нажатием.</string>
+    <string name="recurring_day">день %1$d</string>
+    <string name="recurring_day_label">День месяца</string>
+    <string name="recurring_day_hint">От 1 до 31. В коротких месяцах операция сдвинется на последний день.</string>
+    <string name="recurring_next">ближайшее: %1$s</string>
+    <string name="recurring_paused">приостановлена</string>
+    <string name="recurring_active">Активна</string>
+    <string name="recurring_active_hint">Приостановленные операции не попадают в список ожидающих</string>
+    <string name="recurring_delete_title">Удалить регулярную операцию?</string>
+    <string name="recurring_delete_message">Уже внесённые по ней операции останутся.</string>
+
+    <!-- Цели -->
+    <string name="goal_add">Добавить цель</string>
+    <string name="goal_edit">Цель</string>
+    <string name="goals_year">Цели на год</string>
+    <string name="goals_mid">Цели на 2–5 лет</string>
+    <string name="goals_empty_title">Целей пока нет</string>
+    <string name="goals_empty_message">Цель превращает накопления в понятный план: сколько и до какого срока нужно откладывать.</string>
+    <string name="goals_flow_note">Прогнозы считаются по свободному денежному потоку из плана — %1$s в месяц. Условно весь поток направляется на каждую цель.</string>
+    <string name="goal_saved_label">Уже накоплено</string>
+    <string name="goal_saved_of">Накоплено %1$s из %2$s</string>
+    <string name="goal_saved_of_percent">Накоплено %1$s из %2$s (%3$s)</string>
+    <string name="goal_saved_only">Накоплено %1$s</string>
+    <string name="goal_deadline">Срок: %1$s</string>
+    <string name="goal_deadline_passed">Срок уже прошёл — перенесите его или скорректируйте цель.</string>
+    <string name="goal_required_per_month">Чтобы успеть к сроку, нужно откладывать %1$s в месяц.</string>
+    <string name="goal_on_track">Текущего потока хватает.</string>
+    <string name="goal_off_track">Текущего потока не хватает.</string>
+    <string name="goal_forecast">При текущем потоке (%1$s в месяц) цель будет достигнута через %2$d мес. — примерно к %3$s.</string>
+    <string name="goal_forecast_date">Прогноз: %1$s</string>
+    <string name="goal_forecast_unreachable">При нулевом или отрицательном свободном потоке цель недостижима. Сначала улучшите поток.</string>
+    <string name="goal_reached">Цель достигнута!</string>
+    <string name="goal_top_up">Пополнить</string>
+    <string name="goal_top_up_title">Пополнить: %1$s</string>
+    <string name="goal_horizon">Горизонт</string>
+    <string name="goal_delete_title">Удалить цель?</string>
+    <string name="goal_delete_message">Накопленная сумма по цели не вернётся в учёт операций.</string>
+
+    <!-- Категории -->
+    <string name="categories_title">Категории</string>
+    <string name="categories_empty">Категорий нет</string>
+    <string name="categories_empty_hint">Нажмите «+», чтобы добавить категорию.</string>
+    <string name="category_add">Новая категория</string>
+    <string name="category_edit">Категория</string>
+    <string name="category_name">Название</string>
+    <string name="category_icon">Значок</string>
+    <string name="category_kind">Вид расходов</string>
+    <string name="category_kind_mandatory">Обязательные</string>
+    <string name="category_kind_variable">Переменные</string>
+    <string name="category_kind_debt">Платежи по долгам</string>
+    <string name="category_kind_hint">От вида зависят показатели: обязательные и переменные расходы считаются отдельно.</string>
+    <string name="category_is_debt">Платежи по кредитам</string>
+    <string name="category_is_debt_hint">Операции этой категории попадут в «платежи по долгам», а не в обязательные расходы</string>
+    <string name="category_limit">Лимит в месяц</string>
+    <string name="category_limit_hint">Необязательно. Покажем, сколько осталось до лимита.</string>
+    <string name="category_limit_value">лимит %1$s</string>
+    <string name="category_archive">В архиве</string>
+    <string name="category_archive_hint">Архивные категории скрыты при вводе операций, но остаются в истории</string>
+    <string name="category_archived">в архиве</string>
+    <string name="category_duplicate">Категория с таким названием уже есть</string>
+
+    <!-- Названия предустановленных категорий -->
+    <string name="cat_groceries">Продукты</string>
+    <string name="cat_utilities">ЖКХ</string>
+    <string name="cat_transport">Транспорт</string>
+    <string name="cat_communication">Связь</string>
+    <string name="cat_rent_mortgage">Аренда и ипотека</string>
+    <string name="cat_loans">Кредиты</string>
+    <string name="cat_health">Здоровье</string>
+    <string name="cat_kids">Дети</string>
+    <string name="cat_clothes">Одежда</string>
+    <string name="cat_entertainment">Развлечения</string>
+    <string name="cat_cafe">Кафе</string>
+    <string name="cat_subscriptions">Подписки</string>
+    <string name="cat_education">Образование</string>
+    <string name="cat_other_expense">Прочее</string>
+    <string name="cat_salary">Зарплата</string>
+    <string name="cat_side_income">Подработка</string>
+    <string name="cat_rent_income">Аренда</string>
+    <string name="cat_other_income">Прочие доходы</string>
+
+    <!-- Ещё -->
+    <string name="more_survey">Ответы опроса</string>
+    <string name="more_survey_hint">Изменить данные о семье, доходах и расходах</string>
+    <string name="more_categories">Категории</string>
+    <string name="more_categories_hint">Добавить, изменить, архивировать, задать лимиты</string>
+    <string name="more_recurring">Регулярные операции</string>
+    <string name="more_recurring_hint">Ежемесячные платежи и поступления</string>
+    <string name="more_settings">Настройки</string>
+    <string name="more_settings_hint">Напоминания, блокировка, удаление данных</string>
+    <string name="more_backup">Экспорт и импорт</string>
+    <string name="more_backup_hint">Резервная копия в JSON, выгрузка операций в CSV</string>
+    <string name="more_about">О приложении</string>
+    <string name="more_about_hint">Версия, конфиденциальность, важная информация</string>
+    <string name="about_version">Версия %1$s</string>
+    <string name="about_description">Помогает семье систематизировать финансы: опрос формирует сводку показателей, дальше вы вручную ведёте учёт, а приложение объясняет, что означают показатели и какая у них норма.</string>
+    <string name="about_privacy_title">Конфиденциальность</string>
+    <string name="about_privacy">Данные хранятся только на этом устройстве. У приложения нет доступа в интернет, нет регистрации и сторонней аналитики. Облачное резервное копирование системы отключено — для переноса данных используйте экспорт в JSON.</string>
+
+    <!-- Настройки -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_reminders">Напоминания</string>
+    <string name="settings_reminders_hint">Уведомление не приходит, если сегодня вы уже вносили операции.</string>
+    <string name="settings_weekday">День недели</string>
+    <string name="settings_time">Время: %1$s</string>
+    <string name="settings_notifications_off">Уведомления для приложения выключены, поэтому напоминания не придут. Приложение при этом работает как обычно.</string>
+    <string name="settings_notifications_allow">Разрешить уведомления</string>
+    <string name="settings_month">Расчётный месяц</string>
+    <string name="settings_month_hint">От этого зависят итоги в сводке, на виджете, лимиты, цели и сравнение месяцев. По умолчанию месяц календарный, с 1 числа. Если доход приходит в середине месяца, выберите день, с которого начинается ваш период. Операции не меняются, пересчитываются только итоги.</string>
+    <string name="settings_month_button">День начала месяца: %1$d</string>
+    <string name="settings_month_current">Сейчас: %1$s</string>
+    <string name="settings_month_naming">Период называется по месяцу начала: например, с 25 октября по 24 ноября — «октябрь».</string>
+    <string name="settings_month_dialog_title">День начала месяца</string>
+    <string name="settings_month_option_default">%1$d — календарный месяц</string>
+    <string name="settings_month_option">%1$d-е число</string>
+    <string name="settings_security">Безопасность</string>
+    <string name="settings_lock">Блокировка приложения</string>
+    <string name="settings_lock_hint">Вход по биометрии или PIN-коду, паролю, графическому ключу устройства</string>
+    <string name="settings_lock_unavailable">Сначала настройте экран блокировки или биометрию в настройках устройства</string>
+    <string name="settings_lock_error">Не удалось подтвердить личность, блокировка не изменена.</string>
+    <string name="settings_data">Данные</string>
+    <string name="settings_wipe">Удалить все данные</string>
+    <string name="settings_wipe_title">Удалить все данные?</string>
+    <string name="settings_wipe_message">Будут безвозвратно удалены ответы опроса, операции, цели, категории и настройки. Сначала сделайте резервную копию, если данные ещё понадобятся.</string>
+    <string name="settings_wipe_confirm">Удалить всё</string>
+    <string name="lock_enable_title">Подтвердите, чтобы включить блокировку</string>
+    <string name="lock_title">Приложение заблокировано</string>
+    <string name="lock_subtitle">Подтвердите, что это вы</string>
+    <string name="lock_unlock">Разблокировать</string>
+
+    <!-- Экспорт и импорт -->
+    <string name="backup_title">Экспорт и импорт</string>
+    <string name="backup_hint">Резервная копия — единственный способ перенести данные на другое устройство или восстановить их после переустановки. Файл не шифруется: храните его в надёжном месте.</string>
+    <string name="backup_export_section">Экспорт</string>
+    <string name="backup_export_json">Сохранить резервную копию (JSON)</string>
+    <string name="backup_export_csv">Выгрузить операции (CSV)</string>
+    <string name="backup_csv_hint">CSV открывается в Excel и Google Таблицах: разделитель «;», кодировка UTF-8.</string>
+    <string name="backup_import_section">Импорт</string>
+    <string name="backup_import">Загрузить из резервной копии</string>
+    <string name="backup_export_ok">Файл сохранён</string>
+    <string name="backup_export_failed">Не удалось сохранить файл</string>
+    <string name="backup_import_ok">Данные загружены</string>
+    <string name="backup_read_failed">Не удалось прочитать файл</string>
+    <string name="backup_import_title">Загрузить данные?</string>
+    <string name="backup_import_summary">В файле: операций — %1$d, категорий — %2$d, целей — %3$d.</string>
+    <string name="backup_mode_replace">Заменить текущие данные</string>
+    <string name="backup_mode_replace_hint">Рекомендуется для восстановления</string>
+    <string name="backup_mode_merge">Объединить с текущими</string>
+    <string name="backup_mode_merge_hint">Добавит новые операции, цели и категории; совпадающие пропустит</string>
+    <string name="backup_replace_warning">Текущие данные будут заменены без возможности отмены.</string>
+    <string name="backup_import_confirm">Загрузить</string>
+    <string name="backup_rejected_title">Файл не подходит</string>
+    <string name="backup_rejected_malformed">Файл повреждён или не является резервной копией этого приложения.</string>
+    <string name="backup_rejected_not_backup">Это не резервная копия приложения Fingramm.</string>
+    <string name="backup_rejected_newer">Файл создан более новой версией приложения. Обновите приложение и повторите.</string>
+    <string name="backup_rejected_invalid">В файле нарушена целостность данных, загрузка отменена.</string>
+
+    <string name="csv_date">Дата</string>
+    <string name="csv_type">Тип</string>
+    <string name="csv_amount">Сумма</string>
+    <string name="csv_currency">Валюта</string>
+    <string name="csv_category">Категория</string>
+    <string name="csv_kind">Вид</string>
+    <string name="csv_account">Счёт</string>
+    <string name="csv_note">Комментарий</string>
+
+    <!-- Уведомления -->
+    <string name="notification_channel_name">Напоминания</string>
+    <string name="notification_channel_description">Мягкие напоминания внести операции</string>
+    <string name="notification_title">Fingramm</string>
+    <string name="notification_text_daily">Как прошёл день? Внесите траты — это займёт минуту.</string>
+    <string name="notification_text_weekly">Неделя позади — самое время обновить учёт.</string>
+
+    <!-- Виджеты рабочего стола -->
+    <string name="widget_quick_label">Fingramm: добавить операцию</string>
+    <string name="widget_quick_description">Две кнопки: добавить расход или доход</string>
+    <string name="widget_month_label">Fingramm: показатели месяца</string>
+    <string name="widget_month_description">Доходы, расходы и остаток текущего месяца, кнопки добавления операции</string>
+    <string name="widget_expense">Расход</string>
+    <string name="widget_income">Доход</string>
+    <string name="widget_expense_glyph">−</string>
+    <string name="widget_income_glyph">+</string>
+    <string name="widget_expense_cd">Добавить расход</string>
+    <string name="widget_income_cd">Добавить доход</string>
+    <string name="widget_label_income">Доходы</string>
+    <string name="widget_label_expenses">Расходы</string>
+    <string name="widget_label_balance">Остаток</string>
+    <string name="widget_stats_cd">%1$s. Доходы %2$s, расходы %3$s, остаток %4$s. Открыть сводку</string>
+    <string name="widget_stats_hidden_cd">%1$s. Суммы скрыты, потому что включена блокировка. Открыть приложение</string>
+    <string name="widget_stats_empty_cd">Откройте приложение и пройдите опрос, чтобы увидеть показатели</string>
+</resources>
