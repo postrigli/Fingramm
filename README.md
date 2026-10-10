@@ -57,8 +57,8 @@ GitHub Actions собирает готовый **debug-APK** при каждом
 
 Debug-APK подписан отладочным ключом, поэтому устанавливается на любое устройство, но не годится для публикации.
 Артефакт `app-release-unsigned` — неподписанная release-сборка: на устройство она не устанавливается, пока её не
-подписать своим ключом (см. ниже). Чтобы собрать APK вручную, запустите workflow через **Run workflow** либо
-выполните `./gradlew assembleDebug`: файл появится в `app/build/outputs/apk/debug/`.
+подписать своим ключом (см. ниже). После слияния PR в `main` workflow можно запускать вручную (**Actions → CI → Run workflow**); локально APK
+собирается командой `./gradlew assembleDebug`, файл появится в `app/build/outputs/apk/debug/`.
 
 ## Сборка
 
