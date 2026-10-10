@@ -203,7 +203,7 @@ class BackupViewModel @Inject constructor(
                         null
                     }
                 }
-            } catch (e: IOException) {
+            } catch (ignored: IOException) {
                 BackupMessage.ReadFailed
             }
             _state.update { it.copy(busy = false) }
@@ -217,7 +217,7 @@ class BackupViewModel @Inject constructor(
         val preview = _state.value.preview ?: return
         _state.update { it.copy(preview = null, busy = true) }
         viewModelScope.launch {
-            backup.import(preview.data, mode)
+            backup.importData(preview.data, mode)
             scheduler.apply(settings.current().reminder)
             _state.update { it.copy(busy = false) }
             _messages.send(BackupMessage.ImportOk)
@@ -229,7 +229,7 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             val message = try {
                 withContext(Dispatchers.IO) { block() }
-            } catch (e: IOException) {
+            } catch (ignored: IOException) {
                 failure
             }
             _state.update { it.copy(busy = false) }

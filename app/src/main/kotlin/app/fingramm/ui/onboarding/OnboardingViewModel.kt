@@ -6,11 +6,11 @@ import androidx.lifecycle.viewModelScope
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.domain.model.ReminderSettings
-import app.fingramm.domain.survey.MainGoalDraft
 import app.fingramm.domain.survey.ReminderDefaults
 import app.fingramm.domain.survey.SurveyDraft
-import app.fingramm.domain.survey.SurveyStep
-import app.fingramm.domain.survey.SurveyValidation
+import app.fingramm.domain.survey.SurveyWizard
+import app.fingramm.domain.survey.WizardAdvance
+import app.fingramm.domain.survey.WizardState
 import app.fingramm.notifications.ReminderScheduler
 import app.fingramm.ui.CategoryPresets
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +26,8 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
+data class OnboardingUiState(val wizard: WizardState = WizardState(), val saving: Boolean = false)
+
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -34,8 +36,8 @@ class OnboardingViewModel @Inject constructor(
     private val scheduler: ReminderScheduler,
     private val clock: Clock,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(SurveyFormState())
-    val state: StateFlow<SurveyFormState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(OnboardingUiState())
+    val state: StateFlow<OnboardingUiState> = _state.asStateFlow()
 
     private val _events = Channel<Unit>(Channel.BUFFERED)
 
@@ -44,67 +46,25 @@ class OnboardingViewModel @Inject constructor(
 
     val today: LocalDate get() = LocalDate.now(clock)
 
-    private val steps = SurveyStep.entries
-
     fun update(transform: (SurveyDraft) -> SurveyDraft) {
-        _state.update { it.copy(draft = transform(it.draft)) }
+        _state.update { it.copy(wizard = it.wizard.copy(draft = transform(it.wizard.draft))) }
     }
 
-    fun back() {
-        _state.update {
-            val index = steps.indexOf(it.step)
-            if (index > 0) it.copy(step = steps[index - 1], showErrors = false) else it
-        }
-    }
+    fun back() = _state.update { it.copy(wizard = SurveyWizard.back(it.wizard)) }
 
-    /** Переход вперёд с проверкой текущего шага; на последнем шаге сохраняет опрос. */
-    fun next() {
-        val current = _state.value
-        if (current.errorsFor(current.step, today).isNotEmpty()) {
-            _state.update { it.copy(showErrors = true) }
-            return
-        }
-        val index = steps.indexOf(current.step)
-        if (index == steps.lastIndex) {
-            finish()
-        } else {
-            _state.update { it.copy(step = steps[index + 1], showErrors = false) }
+    fun next() = apply(SurveyWizard.next(_state.value.wizard, today))
+
+    fun skip() = apply(SurveyWizard.skip(_state.value.wizard, today))
+
+    private fun apply(advance: WizardAdvance) {
+        when (advance) {
+            is WizardAdvance.Moved -> _state.update { it.copy(wizard = advance.state) }
+            is WizardAdvance.Finish -> save(advance.draft)
         }
     }
 
-    /** Пропуск необязательного шага: введённое на нём сбрасывается, чтобы не оставить неполных данных. */
-    fun skip() {
-        val current = _state.value
-        if (!current.step.optional) return
-        update {
-            when (current.step) {
-                SurveyStep.ASSETS -> it.copy(assets = emptyList(), includeAssetsInCapital = false)
-                SurveyStep.MAIN_GOAL -> it.copy(mainGoal = MainGoalDraft())
-                SurveyStep.MID_GOALS -> it.copy(midGoals = emptyList())
-                SurveyStep.HABITS -> it.copy(experience = null, timeCommitment = null, reminderMode = null)
-                else -> it
-            }
-        }
-        val index = steps.indexOf(current.step)
-        if (index == steps.lastIndex) {
-            finish()
-        } else {
-            _state.update {
-                it.copy(
-                    step = steps[index + 1],
-                    showErrors = false,
-                )
-            }
-        }
-    }
-
-    private fun finish() {
-        val draft = _state.value.draft
-        val failing = SurveyValidation.validateAll(draft, today)
-        if (failing.isNotEmpty()) {
-            _state.update { it.copy(step = failing.keys.first(), showErrors = true) }
-            return
-        }
+    private fun save(draft: SurveyDraft) {
+        if (_state.value.saving) return
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             val result = buildSurveyResult(context, draft, today, createdAt = today)

@@ -21,6 +21,7 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 object AppModule {
     @Provides
     @Singleton
+    @Suppress("SpreadOperator") // массив миграций пока пуст и короток
     fun database(
         @ApplicationContext context: Context,
     ): AppDatabase =

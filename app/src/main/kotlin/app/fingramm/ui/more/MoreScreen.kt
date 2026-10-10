@@ -67,7 +67,7 @@ fun AboutScreen(onBack: () -> Unit) {
     val version = remember {
         try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (ignored: PackageManager.NameNotFoundException) {
             ""
         }
     }

@@ -35,7 +35,7 @@ class BackupRepository @Inject constructor(
     }
 
     /** Применяет импорт. При слиянии результат считается чистой функцией домена и записывается как замена. */
-    suspend fun import(incoming: BackupData, mode: ImportMode): BackupData {
+    suspend fun importData(incoming: BackupData, mode: ImportMode): BackupData {
         val result = when (mode) {
             ImportMode.REPLACE -> incoming
             ImportMode.MERGE -> BackupMerger.merge(snapshot(), incoming)

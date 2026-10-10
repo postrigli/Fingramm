@@ -80,7 +80,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
                 if (reminder.mode == ReminderMode.WEEKLY) {
                     Text(stringResource(R.string.settings_weekday), style = MaterialTheme.typography.titleSmall)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (1..WEEK_DAYS).forEach { day ->
+                        for (day in 1..WEEK_DAYS) {
                             FilterChip(
                                 selected = reminder.weekday == day,
                                 onClick = { viewModel.setWeekday(day) },

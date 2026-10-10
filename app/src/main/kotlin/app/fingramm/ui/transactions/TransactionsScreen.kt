@@ -550,8 +550,11 @@ private fun PendingSheet(
         ) {
             Text(stringResource(R.string.pending_title), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.pending_hint), style = MaterialTheme.typography.bodyMedium)
+            // Списания идут по порядку: пока не обработано ближайшее по шаблону, следующие недоступны.
+            val earliest = pending.groupBy { it.template.id }.mapValues { (_, list) -> list.minOf { it.dueDate } }
             pending.forEach { item ->
                 val template = item.template
+                val actionable = item.dueDate == earliest[template.id]
                 val category = state.categoriesById[template.categoryId]
                 val sign = if (template.type == TransactionType.INCOME) "+" else "−"
                 Card(Modifier.fillMaxWidth()) {
@@ -571,8 +574,12 @@ private fun PendingSheet(
                             style = MaterialTheme.typography.bodySmall,
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onConfirm(item) }) { Text(stringResource(R.string.pending_confirm)) }
-                            OutlinedButton(onClick = { onSkip(item) }) { Text(stringResource(R.string.pending_skip)) }
+                            Button(onClick = { onConfirm(item) }, enabled = actionable) {
+                                Text(stringResource(R.string.pending_confirm))
+                            }
+                            OutlinedButton(onClick = { onSkip(item) }, enabled = actionable) {
+                                Text(stringResource(R.string.pending_skip))
+                            }
                         }
                     }
                 }

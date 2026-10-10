@@ -44,9 +44,11 @@ class ReminderWorker @AssistedInject constructor(
         val startOfToday = LocalDate.now(clock).atStartOfDay(clock.zone).toInstant().toEpochMilli()
         val alreadyLogged = transactions.countCreatedSince(startOfToday) > 0
         if (!alreadyLogged && canNotify()) {
-            show(
-                if (settings.mode == ReminderMode.WEEKLY) R.string.notification_text_weekly else R.string.notification_text_daily,
-            )
+            val text = when (settings.mode) {
+                ReminderMode.WEEKLY -> R.string.notification_text_weekly
+                else -> R.string.notification_text_daily
+            }
+            show(text)
         }
         scheduler.apply(settings)
         return Result.success()

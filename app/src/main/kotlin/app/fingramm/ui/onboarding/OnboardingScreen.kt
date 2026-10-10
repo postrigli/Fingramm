@@ -33,10 +33,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.fingramm.R
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.survey.ReminderDefaults
+import app.fingramm.domain.survey.SurveyDraft
 import app.fingramm.domain.survey.SurveyStep
+import app.fingramm.domain.survey.SurveyWizard
+import app.fingramm.domain.survey.WizardState
+import app.fingramm.ui.common.NotificationPermissionRequest
 import app.fingramm.ui.common.PrimaryButton
 import app.fingramm.ui.common.rememberNotificationPermissionRequest
 import app.fingramm.ui.survey.SurveyStepContent
+import java.time.LocalDate
 
 /** Мастер первого запуска: по одному вопросу на экран, с прогрессом, возвратом и пропуском необязательного. */
 @Composable
@@ -45,25 +50,47 @@ fun OnboardingScreen(
     onRestore: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val ui by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.finished.collect { onFinished() } }
+    OnboardingContent(
+        wizard = ui.wizard,
+        saving = ui.saving,
+        today = viewModel.today,
+        onUpdate = viewModel::update,
+        onBack = viewModel::back,
+        onNext = viewModel::next,
+        onSkip = viewModel::skip,
+        onRestore = onRestore,
+        requestPermission = rememberNotificationPermissionRequest(),
+    )
+}
 
-    val requestPermission = rememberNotificationPermissionRequest()
-    val steps = SurveyStep.entries
-    val index = steps.indexOf(state.step)
-    val questionCount = steps.lastIndex
-    BackHandler(enabled = index > 0) { viewModel.back() }
-    val errors = if (state.showErrors) state.errorsFor(state.step, viewModel.today) else emptyList()
+/** Без состояния и без Hilt: вся логика переходов приходит снаружи, поэтому экран тестируется отдельно. */
+@Composable
+fun OnboardingContent(
+    wizard: WizardState,
+    saving: Boolean,
+    today: LocalDate,
+    onUpdate: ((SurveyDraft) -> SurveyDraft) -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+    onSkip: () -> Unit,
+    onRestore: () -> Unit,
+    requestPermission: NotificationPermissionRequest,
+) {
+    val index = wizard.stepIndex
+    BackHandler(enabled = index > 0, onBack = onBack)
+    val errors = SurveyWizard.visibleErrors(wizard, today)
 
     Scaffold(
         modifier = Modifier.imePadding(),
         topBar = {
             if (index > 0) {
-                val label = stringResource(R.string.survey_progress, index, questionCount)
+                val label = stringResource(R.string.survey_progress, index, wizard.questionCount)
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Text(label, style = MaterialTheme.typography.labelMedium)
                     LinearProgressIndicator(
-                        progress = { index.toFloat() / questionCount },
+                        progress = { index.toFloat() / wizard.questionCount },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 6.dp)
@@ -82,26 +109,28 @@ fun OnboardingScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (index > 0) {
-                        TextButton(onClick = viewModel::back) { Text(stringResource(R.string.action_back)) }
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
                     }
-                    if (state.step.optional) {
-                        TextButton(onClick = viewModel::skip) { Text(stringResource(R.string.action_skip)) }
+                    if (wizard.step.optional) {
+                        TextButton(onClick = onSkip) { Text(stringResource(R.string.action_skip)) }
                     }
-                    val nextLabel = when (state.step) {
+                    val nextLabel = when (wizard.step) {
                         SurveyStep.WELCOME -> R.string.action_start
                         SurveyStep.HABITS -> R.string.action_finish
                         else -> R.string.action_next
                     }
                     PrimaryButton(
                         text = stringResource(nextLabel),
-                        enabled = !state.saving,
+                        enabled = !saving,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            val mode = state.draft.reminderMode ?: ReminderDefaults.suggested(state.draft.timeCommitment)
-                            if (state.step == SurveyStep.HABITS && mode != ReminderMode.OFF) {
-                                requestPermission { viewModel.next() }
+                            val draft = wizard.draft
+                            val mode = draft.reminderMode ?: ReminderDefaults.suggested(draft.timeCommitment)
+                            if (wizard.step == SurveyStep.HABITS && mode != ReminderMode.OFF) {
+                                // Разрешение запрашиваем в момент подтверждения режима; отказ не блокирует сохранение.
+                                requestPermission { onNext() }
                             } else {
-                                viewModel.next()
+                                onNext()
                             }
                         },
                     )
@@ -117,13 +146,13 @@ fun OnboardingScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             SurveyStepContent(
-                step = state.step,
-                draft = state.draft,
+                step = wizard.step,
+                draft = wizard.draft,
                 errors = errors,
-                onChange = viewModel::update,
+                onChange = onUpdate,
                 onReminderPicked = { mode -> if (mode != ReminderMode.OFF) requestPermission { } },
             )
-            if (state.step == SurveyStep.WELCOME) {
+            if (wizard.step == SurveyStep.WELCOME) {
                 TextButton(onClick = onRestore, modifier = Modifier.padding(top = 8.dp)) {
                     Text(stringResource(R.string.onboarding_restore))
                 }

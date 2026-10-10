@@ -37,6 +37,8 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
     suspend fun confirm(occurrence: PendingOccurrence, nowMillis: Long) {
         db.withTransaction {
             val template = dao.getById(occurrence.template.id) ?: return@withTransaction
+            // Повторное нажатие или устаревший список: обрабатываем только ближайшее необработанное списание.
+            if (template.nextDueDate != occurrence.dueDate) return@withTransaction
             val entity = Transaction(
                 type = template.type,
                 amountMinor = template.amountMinor,

@@ -69,7 +69,8 @@ data class RecurringFormState(
 ) {
     val amountError: Boolean get() = showErrors && (amountMinor ?: 0L) <= 0L
     val categoryError: Boolean get() = showErrors && categoryId == null
-    val dayError: Boolean get() = showErrors && (dayOfMonth == null || dayOfMonth !in 1..MAX_DAY)
+    val dayError: Boolean get() = showErrors && dayOfMonth !in 1..MAX_DAY
+    val isValid: Boolean get() = (amountMinor ?: 0L) > 0L && categoryId != null && dayOfMonth in 1..MAX_DAY
 
     companion object {
         const val MAX_DAY = 31
@@ -127,7 +128,7 @@ class RecurringEditViewModel @Inject constructor(
         val amount = s.amountMinor
         val category = s.categoryId
         val day = s.dayOfMonth
-        if (amount == null || amount <= 0 || category == null || day == null || day !in 1..RecurringFormState.MAX_DAY) {
+        if (!s.isValid || amount == null || category == null || day == null) {
             _state.update { it.copy(showErrors = true) }
             return
         }

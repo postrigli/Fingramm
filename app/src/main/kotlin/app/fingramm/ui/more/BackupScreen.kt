@@ -50,7 +50,7 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel(
     val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         uri?.let(viewModel::exportCsv)
     }
-    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(viewModel::prepareImport)
     }
 
@@ -93,7 +93,7 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel(
 
             SectionTitle(stringResource(R.string.backup_import_section))
             OutlinedButton(
-                onClick = { import.launch(arrayOf("*/*")) },
+                onClick = { importPicker.launch(arrayOf("*/*")) },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.backup_import)) }

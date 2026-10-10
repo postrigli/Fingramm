@@ -12,7 +12,7 @@ import app.fingramm.domain.survey.SurveyStep
 import app.fingramm.domain.survey.SurveyValidation
 import java.time.LocalDate
 
-/** Состояние формы опроса, общее для мастера онбординга и экрана редактирования ответов. */
+/** Состояние формы редактирования одного блока ответов опроса (мастер онбординга использует WizardState). */
 data class SurveyFormState(
     val draft: SurveyDraft = SurveyDraft(),
     val step: SurveyStep = SurveyStep.WELCOME,

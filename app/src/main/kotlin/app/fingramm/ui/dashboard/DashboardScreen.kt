@@ -286,7 +286,10 @@ private fun StructureSection(state: DashboardUiState, money: (Long) -> String) {
     DonutChart(
         segments = segments,
         centerTitle = stringResource(
-            if (state.mode == DashboardMode.PLAN) R.string.dashboard_structure_center_plan else R.string.dashboard_structure_center_fact,
+            when (state.mode) {
+                DashboardMode.PLAN -> R.string.dashboard_structure_center_plan
+                DashboardMode.FACT -> R.string.dashboard_structure_center_fact
+            },
         ),
         centerValue = money(total),
         formatValue = money,
