@@ -24,6 +24,7 @@ import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
 import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.model.TransactionType
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.recurring.PendingOccurrence
 import app.fingramm.domain.survey.DefaultNames
 import app.fingramm.domain.survey.DraftAmount
@@ -89,7 +90,7 @@ class RepositoriesTest {
         transactions = TransactionRepository(db)
         goals = GoalRepository(db)
         recurring = RecurringRepository(db)
-        stats = StatsRepository(db)
+        stats = StatsRepository(db, settings)
         backup = BackupRepository(db, settings)
     }
 
@@ -447,5 +448,109 @@ class RepositoriesTest {
         assertEquals(true, widgetLoader().load().amountsHidden)
         settings.setLockEnabled(false)
         assertEquals(false, widgetLoader().load().amountsHidden)
+    }
+
+    // ---------- День начала месяца ----------
+
+    private fun rowsFor(category: String, type: TransactionType) = runBlocking {
+        stats.monthCategoryTotals.first()
+            .filter { it.categoryId == categoryId(category) && it.type == type }
+            .associate { it.month to it.totalMinor }
+    }
+
+    @Test
+    fun monthTotalsAreCalendarMonthsByDefault() = runBlocking {
+        onboard()
+        transactions.add(tx(100, "groceries", LocalDate.of(2026, 10, 1)), 1)
+        transactions.add(tx(200, "groceries", LocalDate.of(2026, 10, 31)), 2)
+        transactions.add(tx(400, "groceries", LocalDate.of(2026, 11, 1)), 3)
+        assertEquals(
+            mapOf(YearMonth.of(2026, 10) to 300L, YearMonth.of(2026, 11) to 400L),
+            rowsFor("groceries", TransactionType.EXPENSE),
+        )
+    }
+
+    @Test
+    fun monthTotalsFollowTheMonthStartDayAndNameThePeriodAfterItsStartMonth() = runBlocking {
+        onboard()
+        settings.setMonthStartDay(25)
+        transactions.add(tx(1, "groceries", LocalDate.of(2026, 10, 24)), 1) // сентябрьский период
+        transactions.add(tx(10, "groceries", LocalDate.of(2026, 10, 25)), 2) // октябрьский: 25.10–24.11
+        transactions.add(tx(100, "groceries", LocalDate.of(2026, 11, 24)), 3)
+        transactions.add(tx(1000, "groceries", LocalDate.of(2026, 11, 25)), 4) // ноябрьский
+        assertEquals(
+            mapOf(
+                YearMonth.of(2026, 9) to 1L,
+                YearMonth.of(2026, 10) to 110L,
+                YearMonth.of(2026, 11) to 1000L,
+            ),
+            rowsFor("groceries", TransactionType.EXPENSE),
+        )
+    }
+
+    @Test
+    fun monthTotalsMatchTheDomainPeriodForEveryStartDay() = runBlocking {
+        onboard()
+        val end = LocalDate.of(2028, 4, 1)
+        val dates = generateSequence(LocalDate.of(2027, 1, 1)) { it.plusDays(1) }.takeWhile { it < end }.toList()
+        dates.forEachIndexed { index, date -> transactions.add(tx(1, "groceries", date), index.toLong()) }
+        for (startDay in listOf(1, 2, 15, 27, 28)) {
+            settings.setMonthStartDay(startDay)
+            val perPeriod = dates.groupingBy { BudgetPeriod.containing(it, startDay) }.eachCount()
+            val expected = perPeriod.mapValues { it.value.toLong() }
+            assertEquals("startDay $startDay", expected, rowsFor("groceries", TransactionType.EXPENSE))
+        }
+    }
+
+    @Test
+    fun changingTheStartDayReEmitsTheTotals() = runBlocking {
+        onboard()
+        transactions.add(tx(5, "groceries", LocalDate.of(2026, 10, 10)), 1)
+        val before = rowsFor("groceries", TransactionType.EXPENSE)
+        settings.setMonthStartDay(15) // 10 октября теперь в период, начавшийся 15 сентября
+        val after = rowsFor("groceries", TransactionType.EXPENSE)
+        assertEquals(mapOf(YearMonth.of(2026, 10) to 5L), before)
+        assertEquals(mapOf(YearMonth.of(2026, 9) to 5L), after)
+    }
+
+    @Test
+    fun theStartDayIsClampedAndResetByWipe() = runBlocking {
+        settings.setMonthStartDay(99)
+        assertEquals(28, settings.current().monthStartDay)
+        settings.setMonthStartDay(-3)
+        assertEquals(1, settings.current().monthStartDay)
+        settings.setMonthStartDay(17)
+        onboard()
+        backup.wipe()
+        assertEquals(1, settings.current().monthStartDay)
+    }
+
+    @Test
+    fun theStartDayTravelsWithBackups() = runBlocking {
+        onboard()
+        settings.setMonthStartDay(12)
+        val saved = backup.snapshot()
+        assertEquals(12, saved.monthStartDay)
+        backup.wipe()
+        backup.importData(saved, ImportMode.REPLACE)
+        assertEquals(12, settings.current().monthStartDay)
+        // Слияние не меняет настройку текущего пользователя.
+        backup.importData(saved.copy(monthStartDay = 3), ImportMode.MERGE)
+        assertEquals(12, settings.current().monthStartDay)
+    }
+
+    @Test
+    fun widgetFollowsTheStartDay() = runBlocking {
+        onboard()
+        settings.setMonthStartDay(25)
+        // «Сегодня» 10 октября: период начался 25 сентября.
+        transactions.add(tx(40_000, "groceries", LocalDate.of(2026, 9, 25)), 1)
+        transactions.add(tx(10_000, "groceries", LocalDate.of(2026, 9, 24)), 2) // прошлый период
+        transactions.add(tx(70_000, "salary", LocalDate.of(2026, 10, 9), type = TransactionType.INCOME), 3)
+        val state = widgetLoader().load()
+        assertEquals(YearMonth.of(2026, 9), state.month)
+        assertEquals(25, state.startDay)
+        assertEquals(40_000L, state.expensesMinor)
+        assertEquals(70_000L, state.incomeMinor)
     }
 }

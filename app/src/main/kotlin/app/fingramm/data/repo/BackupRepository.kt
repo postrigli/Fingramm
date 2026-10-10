@@ -12,18 +12,21 @@ import javax.inject.Singleton
 
 enum class ImportMode { REPLACE, MERGE }
 
-/** Снимок и восстановление всех таблиц; настройки напоминаний хранятся в DataStore и обрабатываются отдельно. */
+/**
+ * Снимок и восстановление всех таблиц. Настройки напоминаний и начала месяца лежат в DataStore
+ * и обрабатываются отдельно.
+ */
 @Singleton
 class BackupRepository @Inject constructor(
     private val db: AppDatabase,
     private val settings: SettingsRepository,
 ) {
     suspend fun snapshot(): BackupData {
-        val reminder = settings.current().reminder
-        return db.withTransaction { readAll(reminder) }
+        val current = settings.current()
+        return db.withTransaction { readAll(current.reminder, current.monthStartDay) }
     }
 
-    private suspend fun readAll(reminder: ReminderSettings): BackupData {
+    private suspend fun readAll(reminder: ReminderSettings, monthStartDay: Int): BackupData {
         val profileDao = db.profileDao()
         return BackupData(
             profile = profileDao.getProfile()?.toDomain(),
@@ -37,6 +40,7 @@ class BackupRepository @Inject constructor(
             goals = db.goalDao().getAll().map { it.toDomain() },
             categoryLimits = db.categoryDao().getLimits().map { it.toDomain() },
             reminder = reminder,
+            monthStartDay = monthStartDay,
         )
     }
 
@@ -47,8 +51,9 @@ class BackupRepository @Inject constructor(
             ImportMode.MERGE -> BackupMerger.merge(snapshot(), incoming)
         }
         replaceAll(result)
-        // При слиянии `result.reminder` — текущие настройки (или импортированные, если профиля ещё не было).
+        // При слиянии настройки текущие (или импортированные, если профиля ещё не было).
         settings.setReminder(result.reminder)
+        settings.setMonthStartDay(result.monthStartDay)
         return result
     }
 

@@ -19,6 +19,7 @@ import app.fingramm.domain.metrics.VariableSource
 import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.Goal
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.stats.MonthCategoryTotal
 import app.fingramm.domain.stats.MonthTotals
 import app.fingramm.domain.stats.StatsCalculator
@@ -55,6 +56,8 @@ data class DashboardUiState(
     val mode: DashboardMode = DashboardMode.PLAN,
     val month: YearMonth = YearMonth.now(),
     val currentMonth: YearMonth = YearMonth.now(),
+    /** День начала месяца из настроек: 1 — календарный месяц, иначе рядом с названием показываем даты периода. */
+    val startDay: Int = BudgetPeriod.DEFAULT_START_DAY,
     val report: MetricsReport? = null,
     val structure: List<StructureSlice> = emptyList(),
     val monthlyBars: List<MonthTotals> = emptyList(),
@@ -73,6 +76,7 @@ private data class Inputs(
     val categories: List<Category>,
     val goals: List<Goal>,
     val disclaimerShown: Boolean,
+    val startDay: Int,
 )
 
 @HiltViewModel
@@ -85,7 +89,9 @@ class DashboardViewModel @Inject constructor(
     private val clock: Clock,
 ) : ViewModel() {
     private val mode = MutableStateFlow(DashboardMode.PLAN)
-    private val month = MutableStateFlow(YearMonth.now(clock))
+
+    /** На сколько расчётных месяцев назад от текущего открыт экран (0 — текущий). Сдвиг переживает смену дня начала. */
+    private val monthsBack = MutableStateFlow(0)
 
     private val inputs = combine(
         budgetRepository.budget,
@@ -94,33 +100,34 @@ class DashboardViewModel @Inject constructor(
         goalRepository.goals,
         settings.settings,
     ) { budget, rows, categories, goals, appSettings ->
-        Inputs(budget, rows, categories, goals, appSettings.disclaimerShown)
+        Inputs(budget, rows, categories, goals, appSettings.disclaimerShown, appSettings.monthStartDay)
     }
 
-    val state: StateFlow<DashboardUiState> = combine(inputs, mode, month) { inputs, mode, month ->
-        compute(inputs, mode, month)
+    val state: StateFlow<DashboardUiState> = combine(inputs, mode, monthsBack) { inputs, mode, back ->
+        compute(inputs, mode, back)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DashboardUiState())
 
     fun setMode(value: DashboardMode) {
         mode.value = value
     }
 
-    fun previousMonth() = month.update { it.minusMonths(1) }
+    fun previousMonth() = monthsBack.update { it + 1 }
 
-    fun nextMonth() = month.update { if (it < YearMonth.now(clock)) it.plusMonths(1) else it }
+    fun nextMonth() = monthsBack.update { (it - 1).coerceAtLeast(0) }
 
     fun dismissDisclaimer() {
         viewModelScope.launch { settings.setDisclaimerShown() }
     }
 
-    private fun compute(inputs: Inputs, mode: DashboardMode, month: YearMonth): DashboardUiState {
+    private fun compute(inputs: Inputs, mode: DashboardMode, monthsBack: Int): DashboardUiState {
         val budget = inputs.budget ?: return DashboardUiState(loading = false)
-        val current = YearMonth.now(clock)
         val today = LocalDate.now(clock)
+        val current = BudgetPeriod.containing(today, inputs.startDay)
+        val month = current.minusMonths(monthsBack.toLong())
         val categoriesById = inputs.categories.associateBy { it.id }
         val totals = StatsCalculator.monthTotals(inputs.rows, categoriesById)
 
-        val plan = computePlan(budget, totals, current)
+        val plan = computePlan(budget, totals, current, inputs.startDay)
 
         val selected = totals[month] ?: MonthTotals(month)
         val (cashFlow, position) = when (mode) {
@@ -138,6 +145,7 @@ class DashboardViewModel @Inject constructor(
             mode = mode,
             month = month,
             currentMonth = current,
+            startDay = inputs.startDay,
             report = MetricsCalculator.calculate(cashFlow, position),
             structure = when (mode) {
                 DashboardMode.PLAN -> planStructure(plan.cashFlow)

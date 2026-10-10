@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.RemoteViews
 import app.fingramm.R
 import app.fingramm.domain.money.Money
-import app.fingramm.ui.common.formatMonth
+import app.fingramm.ui.common.formatPeriod
 
 /** Строит RemoteViews виджета месяца по [MonthWidgetState]; чистая функция, без обращения к данным. */
 object MonthWidgetRenderer {
@@ -13,7 +13,8 @@ object MonthWidgetRenderer {
 
     fun render(context: Context, state: MonthWidgetState): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_month)
-        val title = formatMonth(state.month).replaceFirstChar { it.uppercase() }
+        // «Октябрь 2026» для календарного месяца, «25 окт. – 24 нояб. 2026» со сдвигом начала.
+        val title = formatPeriod(state.month, state.startDay).replaceFirstChar { it.uppercase() }
         views.setTextViewText(R.id.widget_month, title)
 
         val income: String

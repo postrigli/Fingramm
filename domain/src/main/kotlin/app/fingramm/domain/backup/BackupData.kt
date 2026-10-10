@@ -11,6 +11,7 @@ import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.ReminderSettings
 import app.fingramm.domain.model.SurveyAnswers
 import app.fingramm.domain.model.Transaction
+import app.fingramm.domain.period.BudgetPeriod
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -24,7 +25,7 @@ import java.time.LocalDate
 public const val BACKUP_SCHEMA_VERSION: Int = 1
 public const val BACKUP_APP_ID: String = "fingramm"
 
-/** Полный снимок данных приложения — содержимое всех таблиц и настройки напоминаний. */
+/** Полный снимок данных приложения — содержимое всех таблиц, настройки напоминаний и начала месяца. */
 @Serializable
 public data class BackupData(
     val profile: BudgetProfile? = null,
@@ -38,6 +39,8 @@ public data class BackupData(
     val goals: List<Goal> = emptyList(),
     val categoryLimits: List<CategoryLimit> = emptyList(),
     val reminder: ReminderSettings = ReminderSettings(),
+    /** День начала расчётного месяца 1–28. В файлах без этого поля — календарный месяц. */
+    val monthStartDay: Int = BudgetPeriod.DEFAULT_START_DAY,
 )
 
 /** Файл бэкапа: версия схемы + данные. */

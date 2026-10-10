@@ -434,6 +434,14 @@
     <string name="settings_time">Время: %1$s</string>
     <string name="settings_notifications_off">Уведомления для приложения выключены, поэтому напоминания не придут. Приложение при этом работает как обычно.</string>
     <string name="settings_notifications_allow">Разрешить уведомления</string>
+    <string name="settings_month">Расчётный месяц</string>
+    <string name="settings_month_hint">От этого зависят итоги в сводке, на виджете, лимиты, цели и сравнение месяцев. По умолчанию месяц календарный, с 1 числа. Если доход приходит в середине месяца, выберите день, с которого начинается ваш период. Операции не меняются, пересчитываются только итоги.</string>
+    <string name="settings_month_button">День начала месяца: %1$d</string>
+    <string name="settings_month_current">Сейчас: %1$s</string>
+    <string name="settings_month_naming">Период называется по месяцу начала: например, с 25 октября по 24 ноября — «октябрь».</string>
+    <string name="settings_month_dialog_title">День начала месяца</string>
+    <string name="settings_month_option_default">%1$d — календарный месяц</string>
+    <string name="settings_month_option">%1$d-е число</string>
     <string name="settings_security">Безопасность</string>
     <string name="settings_lock">Блокировка приложения</string>
     <string name="settings_lock_hint">Вход по биометрии или PIN-коду, паролю, графическому ключу устройства</string>

@@ -6,6 +6,7 @@ import app.fingramm.data.computePlan
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.RecurringRepository
+import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.data.repo.StatsRepository
 import app.fingramm.data.repo.TransactionFilter
 import app.fingramm.data.repo.TransactionRepository
@@ -13,6 +14,7 @@ import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.model.TransactionType
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.recurring.PendingOccurrence
 import app.fingramm.domain.recurring.RecurringSchedule
 import app.fingramm.domain.stats.LimitUsage
@@ -60,10 +62,19 @@ data class LimitRow(val category: Category, val usage: LimitUsage)
 
 data class MonthOverview(
     val month: YearMonth,
+    val startDay: Int,
     val totals: MonthTotals,
     val planIncomeMinor: Long,
     val planExpensesMinor: Long,
     val limits: List<LimitRow>,
+)
+
+/** Входы состояния списка: фильтры, найденные операции, категории и день начала месяца. */
+private data class ListInputs(
+    val filters: ListFilters,
+    val items: List<Transaction>,
+    val categories: List<Category>,
+    val startDay: Int,
 )
 
 data class TransactionsUiState(
@@ -77,6 +88,7 @@ data class TransactionsUiState(
     val pending: List<PendingOccurrence> = emptyList(),
     val today: LocalDate = LocalDate.now(),
     val currentMonth: YearMonth = YearMonth.now(),
+    val startDay: Int = BudgetPeriod.DEFAULT_START_DAY,
 ) {
     val categoriesById: Map<Long, Category> get() = categories.associateBy { it.id }
     val isFiltered: Boolean
@@ -92,20 +104,27 @@ class TransactionsViewModel @Inject constructor(
     budgetRepository: BudgetRepository,
     categoryRepository: CategoryRepository,
     statsRepository: StatsRepository,
+    settings: SettingsRepository,
     private val clock: Clock,
 ) : ViewModel() {
     private val filters = MutableStateFlow(ListFilters())
-    private val overviewMonth = MutableStateFlow(YearMonth.now(clock))
+
+    /** На сколько расчётных месяцев назад от текущего открыт обзор (0 — текущий); не зависит от дня начала месяца. */
+    private val overviewBack = MutableStateFlow(0)
+
+    private val startDay: Flow<Int> = settings.monthStartDay
 
     private val _snackbar = Channel<Transaction>(Channel.BUFFERED)
 
     /** Удалённая операция — экран показывает «Отменить». */
     val deleted: Flow<Transaction> = _snackbar.receiveAsFlow()
 
-    private val items: Flow<List<Transaction>> = combine(filters, categoryRepository.categories) { f, categories ->
-        f to categories
-    }.flatMapLatest { (f, categories) ->
-        val (from, to) = periodRange(f)
+    private val items: Flow<List<Transaction>> = combine(
+        filters,
+        categoryRepository.categories,
+        startDay,
+    ) { f, categories, day -> Triple(f, categories, day) }.flatMapLatest { (f, categories, day) ->
+        val (from, to) = periodRange(f, day)
         transactions.observe(
             TransactionFilter(from, to, f.type, f.categoryId, f.query),
             categories,
@@ -116,17 +135,19 @@ class TransactionsViewModel @Inject constructor(
     private val overview: Flow<MonthOverview?> = combine(
         budgetRepository.budget,
         statsRepository.monthCategoryTotals,
-        categoryRepository.categories,
-        categoryRepository.limits,
-        overviewMonth,
-    ) { budget, rows, categories, limits, month ->
+        combine(categoryRepository.categories, categoryRepository.limits, startDay) { c, l, d -> Triple(c, l, d) },
+        overviewBack,
+    ) { budget, rows, (categories, limits, day), back ->
         budget ?: return@combine null
         val byId = categories.associateBy { it.id }
         val totals = StatsCalculator.monthTotals(rows, byId)
+        val current = BudgetPeriod.containing(LocalDate.now(clock), day)
+        val month = current.minusMonths(back.toLong())
         val selected = totals[month] ?: MonthTotals(month)
-        val plan = computePlan(budget, totals, YearMonth.now(clock))
+        val plan = computePlan(budget, totals, current, day)
         MonthOverview(
             month = month,
+            startDay = day,
             totals = selected,
             planIncomeMinor = plan.cashFlow.incomeMinor,
             planExpensesMinor = plan.cashFlow.outflowMinor,
@@ -145,23 +166,26 @@ class TransactionsViewModel @Inject constructor(
             filters,
             items,
             categoryRepository.categories,
-        ) { f, list, categories -> Triple(f, list, categories) },
+            startDay,
+        ) { f, list, categories, day -> ListInputs(f, list, categories, day) },
         overview,
         recurring.templates,
         currency,
-    ) { (f, list, categories), overview, templates, currency ->
+    ) { list, overview, templates, currency ->
         val today = LocalDate.now(clock)
+        val groups = list.items.groupBy { it.date }.map { (date, rows) -> DayGroup(date, netOf(rows), rows) }
         TransactionsUiState(
             loading = false,
             currency = currency,
-            filters = f,
-            groups = list.groupBy { it.date }.map { (date, dayItems) -> DayGroup(date, netOf(dayItems), dayItems) },
-            hasMore = list.size >= f.limit,
-            categories = categories,
+            filters = list.filters,
+            groups = groups,
+            hasMore = list.items.size >= list.filters.limit,
+            categories = list.categories,
             overview = overview,
             pending = RecurringSchedule.pending(templates, today),
             today = today,
-            currentMonth = YearMonth.now(clock),
+            currentMonth = BudgetPeriod.containing(today, list.startDay),
+            startDay = list.startDay,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), TransactionsUiState())
 
@@ -184,9 +208,9 @@ class TransactionsViewModel @Inject constructor(
 
     fun loadMore() = filters.update { it.copy(limit = it.limit + ListFilters.PAGE_SIZE) }
 
-    fun previousOverviewMonth() = overviewMonth.update { it.minusMonths(1) }
+    fun previousOverviewMonth() = overviewBack.update { it + 1 }
 
-    fun nextOverviewMonth() = overviewMonth.update { if (it < YearMonth.now(clock)) it.plusMonths(1) else it }
+    fun nextOverviewMonth() = overviewBack.update { (it - 1).coerceAtLeast(0) }
 
     fun delete(transaction: Transaction) {
         viewModelScope.launch {
@@ -210,11 +234,14 @@ class TransactionsViewModel @Inject constructor(
     private fun netOf(items: List<Transaction>): Long =
         items.sumOf { if (it.type == TransactionType.INCOME) it.amountMinor else -it.amountMinor }
 
-    private fun periodRange(f: ListFilters): Pair<LocalDate?, LocalDate?> {
-        val now = YearMonth.now(clock)
+    /** «Этот» и «прошлый месяц» — расчётные месяцы с учётом дня их начала. */
+    private fun periodRange(f: ListFilters, startDay: Int): Pair<LocalDate?, LocalDate?> {
+        val now = BudgetPeriod.containing(LocalDate.now(clock), startDay)
         return when (f.period) {
-            PeriodPreset.THIS_MONTH -> now.atDay(1) to now.atEndOfMonth()
-            PeriodPreset.LAST_MONTH -> now.minusMonths(1).let { it.atDay(1) to it.atEndOfMonth() }
+            PeriodPreset.THIS_MONTH -> BudgetPeriod.start(now, startDay) to BudgetPeriod.end(now, startDay)
+            PeriodPreset.LAST_MONTH -> now.minusMonths(1).let {
+                BudgetPeriod.start(it, startDay) to BudgetPeriod.end(it, startDay)
+            }
             PeriodPreset.ALL -> null to null
             PeriodPreset.CUSTOM -> f.customFrom to f.customTo
         }

@@ -85,7 +85,7 @@ import app.fingramm.ui.common.EmptyState
 import app.fingramm.ui.common.MAX_CONTENT_WIDTH
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.formatDate
-import app.fingramm.ui.common.formatMonth
+import app.fingramm.ui.common.formatPeriod
 import app.fingramm.ui.common.formatWeekday
 import app.fingramm.ui.theme.LocalStatusColors
 import java.time.Instant
@@ -214,7 +214,7 @@ private fun OverviewCard(state: TransactionsUiState, overview: MonthOverview, vi
                     )
                 }
                 Text(
-                    "${stringResource(R.string.overview_title)} · ${formatMonth(overview.month)}",
+                    "${stringResource(R.string.overview_title)} · ${formatPeriod(overview.month, overview.startDay)}",
                     style = MaterialTheme.typography.titleSmall,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f),

@@ -117,7 +117,7 @@ interface CategoryDao {
     suspend fun clearLimits()
 }
 
-/** Сумма операций типа в категории за месяц (`ym` = `yyyy-MM`). */
+/** Сумма операций типа в категории за расчётный месяц (`ym` = `yyyy-MM` месяца начала периода). */
 data class MonthCategoryRow(
     val ym: String,
     val categoryId: Long,
@@ -176,14 +176,18 @@ interface TransactionDao {
     @Query("DELETE FROM transaction_entry")
     suspend fun clear()
 
+    /**
+     * Итоги по расчётным месяцам. Дата сдвигается на [shiftDays] назад (день начала месяца − 1) и обрезается
+     * до `yyyy-MM`: при сдвиге 0 это календарный месяц. Тот же сдвиг делает `BudgetPeriod.containing`.
+     */
     @Query(
         """
-        SELECT substr(date, 1, 7) AS ym, categoryId, type, SUM(amountMinor) AS total
+        SELECT substr(date(date, '-' || :shiftDays || ' days'), 1, 7) AS ym, categoryId, type, SUM(amountMinor) AS total
         FROM transaction_entry
         GROUP BY ym, categoryId, type
         """,
     )
-    fun observeMonthCategoryTotals(): Flow<List<MonthCategoryRow>>
+    fun observeMonthCategoryTotals(shiftDays: Int): Flow<List<MonthCategoryRow>>
 
     @Query(
         """

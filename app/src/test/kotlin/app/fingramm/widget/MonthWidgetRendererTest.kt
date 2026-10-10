@@ -29,7 +29,8 @@ class MonthWidgetRendererTest {
         expenses: Long = 8_000_000,
         configured: Boolean = true,
         hidden: Boolean = false,
-    ) = MonthWidgetState(october, income, expenses, CurrencyCode.RUB, configured, hidden)
+        startDay: Int = 1,
+    ) = MonthWidgetState(october, startDay, income, expenses, CurrencyCode.RUB, configured, hidden)
 
     private fun inflate(state: MonthWidgetState): View =
         MonthWidgetRenderer.render(context, state).apply(context, FrameLayout(context))
@@ -50,6 +51,13 @@ class MonthWidgetRendererTest {
     @Test
     fun `shows the month in words with a capital letter`() {
         assertEquals("Октябрь 2026", inflate(state()).text(R.id.widget_month))
+    }
+
+    @Test
+    fun `with a later start day the title shows the period dates`() {
+        val title = inflate(state(startDay = 25)).text(R.id.widget_month)
+        assertTrue(title, title.startsWith("25 "))
+        assertTrue(title, title.contains("–") && title.contains("24 ") && title.endsWith("2026"))
     }
 
     @Test

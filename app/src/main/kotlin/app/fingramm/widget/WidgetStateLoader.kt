@@ -7,13 +7,14 @@ import app.fingramm.data.repo.StatsRepository
 import app.fingramm.domain.model.BudgetProfile
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.TransactionType
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.stats.MonthCategoryTotal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import java.time.Clock
-import java.time.YearMonth
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,10 +39,11 @@ class WidgetStateLoader @Inject constructor(
         profile: BudgetProfile?,
         settings: AppSettings,
     ): MonthWidgetState {
-        val month = YearMonth.now(clock)
+        val month = BudgetPeriod.containing(LocalDate.now(clock), settings.monthStartDay)
         val current = rows.filter { it.month == month }
         return MonthWidgetState(
             month = month,
+            startDay = settings.monthStartDay,
             incomeMinor = current.filter { it.type == TransactionType.INCOME }.sumOf { it.totalMinor },
             expensesMinor = current.filter { it.type == TransactionType.EXPENSE }.sumOf { it.totalMinor },
             currency = profile?.currency ?: CurrencyCode.RUB,

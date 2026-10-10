@@ -8,7 +8,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
+import app.fingramm.domain.period.BudgetPeriod
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -19,6 +21,8 @@ data class AppSettings(
     val reminder: ReminderSettings = ReminderSettings(),
     val disclaimerShown: Boolean = false,
     val lockEnabled: Boolean = false,
+    /** День начала расчётного месяца 1–28; 1 — календарный месяц. Спрашивать при первом запуске не нужно. */
+    val monthStartDay: Int = BudgetPeriod.DEFAULT_START_DAY,
 )
 
 @Singleton
@@ -34,8 +38,12 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             ),
             disclaimerShown = prefs[DISCLAIMER_SHOWN] ?: false,
             lockEnabled = prefs[LOCK_ENABLED] ?: false,
+            monthStartDay = BudgetPeriod.normalize(prefs[MONTH_START_DAY] ?: BudgetPeriod.DEFAULT_START_DAY),
         )
     }
+
+    /** Только день начала месяца: репозитории пересчитывают итоги, лишь когда он действительно изменился. */
+    val monthStartDay: Flow<Int> = settings.map { it.monthStartDay }.distinctUntilChanged()
 
     suspend fun current(): AppSettings = settings.first()
 
@@ -56,6 +64,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         dataStore.edit { it[LOCK_ENABLED] = enabled }
     }
 
+    suspend fun setMonthStartDay(day: Int) {
+        dataStore.edit { it[MONTH_START_DAY] = BudgetPeriod.normalize(day) }
+    }
+
     /** Полный сброс настроек (после «Удалить все данные»). */
     suspend fun clear() {
         dataStore.edit { it.clear() }
@@ -68,5 +80,6 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         val REMINDER_WEEKDAY = intPreferencesKey("reminder_weekday")
         val DISCLAIMER_SHOWN = booleanPreferencesKey("disclaimer_shown")
         val LOCK_ENABLED = booleanPreferencesKey("lock_enabled")
+        val MONTH_START_DAY = intPreferencesKey("month_start_day")
     }
 }

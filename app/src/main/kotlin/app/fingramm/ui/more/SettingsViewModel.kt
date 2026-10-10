@@ -63,6 +63,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setLockEnabled(enabled) }
     }
 
+    /** День начала расчётного месяца 1–28. Данные не меняются: итоги пересчитываются по новым границам. */
+    fun setMonthStartDay(day: Int) {
+        viewModelScope.launch { settings.setMonthStartDay(day) }
+    }
+
     /** Полное удаление данных. После него приложение вернётся к онбордингу. */
     fun wipeAll() {
         viewModelScope.launch {

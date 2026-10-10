@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +36,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.fingramm.R
 import app.fingramm.domain.model.ReminderMode
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.security.AppLock
 import app.fingramm.security.findFragmentActivity
 import app.fingramm.ui.common.BackTopBar
@@ -41,11 +47,13 @@ import app.fingramm.ui.common.ScreenColumn
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.SwitchRow
 import app.fingramm.ui.common.TimePickerDialogHost
+import app.fingramm.ui.common.formatPeriod
 import app.fingramm.ui.common.formatTime
 import app.fingramm.ui.common.notificationsAllowed
 import app.fingramm.ui.common.rememberNotificationPermissionRequest
 import app.fingramm.ui.common.weekdayName
 import app.fingramm.ui.survey.reminderModeLabel
+import java.time.LocalDate
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
@@ -60,6 +68,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
     var pickingTime by remember { mutableStateOf(false) }
     var confirmWipe by remember { mutableStateOf(false) }
     var lockError by remember { mutableStateOf(false) }
+    var pickingMonthStart by remember { mutableStateOf(false) }
     val reminder = settings.reminder
 
     Scaffold(topBar = { BackTopBar(stringResource(R.string.settings_title), onBack) }) { padding ->
@@ -114,6 +123,24 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
                         ) { Text(stringResource(R.string.settings_notifications_allow)) }
                     }
                 }
+            }
+
+            SectionTitle(stringResource(R.string.settings_month))
+            Text(stringResource(R.string.settings_month_hint), style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick = { pickingMonthStart = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_month_button, settings.monthStartDay))
+            }
+            val currentPeriod = BudgetPeriod.containing(LocalDate.now(), settings.monthStartDay)
+            Text(
+                stringResource(R.string.settings_month_current, formatPeriod(currentPeriod, settings.monthStartDay)),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (settings.monthStartDay != BudgetPeriod.DEFAULT_START_DAY) {
+                Text(
+                    stringResource(R.string.settings_month_naming),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             SectionTitle(stringResource(R.string.settings_security))
@@ -178,6 +205,16 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
             },
         )
     }
+    if (pickingMonthStart) {
+        MonthStartDialog(
+            selected = settings.monthStartDay,
+            onSelect = { day ->
+                viewModel.setMonthStartDay(day)
+                pickingMonthStart = false
+            },
+            onDismiss = { pickingMonthStart = false },
+        )
+    }
     if (confirmWipe) {
         ConfirmDialog(
             title = stringResource(R.string.settings_wipe_title),
@@ -192,4 +229,33 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
     }
 }
 
+/** Выбор дня начала месяца: список 1–28, выбор сразу применяется. «1» — календарный месяц. */
+@Composable
+private fun MonthStartDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_month_dialog_title)) },
+        text = {
+            LazyColumn(Modifier.heightIn(max = MONTH_DIALOG_MAX_HEIGHT.dp)) {
+                items((BudgetPeriod.DEFAULT_START_DAY..BudgetPeriod.MAX_START_DAY).toList()) { day ->
+                    RadioOption(
+                        selected = day == selected,
+                        onSelect = { onSelect(day) },
+                        label = stringResource(
+                            if (day == BudgetPeriod.DEFAULT_START_DAY) {
+                                R.string.settings_month_option_default
+                            } else {
+                                R.string.settings_month_option
+                            },
+                            day,
+                        ),
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
+}
+
 private const val WEEK_DAYS = 7
+private const val MONTH_DIALOG_MAX_HEIGHT = 360

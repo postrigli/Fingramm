@@ -65,8 +65,8 @@ import app.fingramm.ui.common.ScreenColumn
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.formatDate
 import app.fingramm.ui.common.formatDecimal
-import app.fingramm.ui.common.formatMonth
 import app.fingramm.ui.common.formatMonthShort
+import app.fingramm.ui.common.formatPeriod
 import app.fingramm.ui.theme.ChartPalette
 import app.fingramm.ui.theme.LocalStatusColors
 import java.time.LocalDate
@@ -89,7 +89,7 @@ fun DashboardScreen(onOpenGoals: () -> Unit, viewModel: DashboardViewModel = hil
             ModeSwitch(state.mode, viewModel::setMode)
             if (state.mode == DashboardMode.FACT) {
                 MonthSwitcher(
-                    label = formatMonth(state.month),
+                    label = formatPeriod(state.month, state.startDay),
                     canGoNext = state.canGoNext,
                     onPrevious = viewModel::previousMonth,
                     onNext = viewModel::nextMonth,
@@ -321,7 +321,8 @@ private fun BarsSection(state: DashboardUiState, money: (Long) -> String) {
     val incomeLabel = stringResource(R.string.income)
     val expenseLabel = stringResource(R.string.expenses)
     val summary = stringResource(R.string.dashboard_bars_cd) + ": " + state.monthlyBars.joinToString("; ") {
-        "${formatMonth(it.month)} — $incomeLabel ${money(it.incomeMinor)}, $expenseLabel ${money(it.expensesMinor)}"
+        val period = formatPeriod(it.month, state.startDay)
+        "$period — $incomeLabel ${money(it.incomeMinor)}, $expenseLabel ${money(it.expensesMinor)}"
     }
     IncomeExpenseBarChart(
         bars = bars,

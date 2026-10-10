@@ -7,12 +7,14 @@ import app.fingramm.data.computePlan
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.GoalRepository
+import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.data.repo.StatsRepository
 import app.fingramm.domain.goals.GoalForecast
 import app.fingramm.domain.goals.GoalForecasts
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.Goal
 import app.fingramm.domain.model.GoalHorizon
+import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.stats.StatsCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -28,7 +30,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import javax.inject.Inject
 
 data class GoalItem(val goal: Goal, val forecast: GoalForecast)
@@ -50,6 +51,7 @@ class GoalsViewModel @Inject constructor(
     budgetRepository: BudgetRepository,
     categoryRepository: CategoryRepository,
     statsRepository: StatsRepository,
+    settings: SettingsRepository,
     private val clock: Clock,
 ) : ViewModel() {
     val state: StateFlow<GoalsUiState> = combine(
@@ -57,11 +59,13 @@ class GoalsViewModel @Inject constructor(
         budgetRepository.budget,
         statsRepository.monthCategoryTotals,
         categoryRepository.categories,
-    ) { goals, budget, rows, categories ->
+        settings.monthStartDay,
+    ) { goals, budget, rows, categories, startDay ->
         val today = LocalDate.now(clock)
         val flow = budget?.let {
             val totals = StatsCalculator.monthTotals(rows, categories.associateBy { c -> c.id })
-            computePlan(it, totals, YearMonth.now(clock)).cashFlow.freeCashFlowMinor
+            val current = BudgetPeriod.containing(today, startDay)
+            computePlan(it, totals, current, startDay).cashFlow.freeCashFlowMinor
         } ?: 0L
         val items = goals.map { GoalItem(it, GoalForecasts.forecast(it, flow, today)) }
         GoalsUiState(
