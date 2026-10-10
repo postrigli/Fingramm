@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.room)
 }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -76,10 +77,6 @@ android {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 
-    sourceSets {
-        // Схемы Room попадают в androidTest-ресурсы для тестов миграций.
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
-    }
 }
 
 kotlin {
@@ -88,8 +85,13 @@ kotlin {
     }
 }
 
+// Room Gradle plugin разводит схемы по вариантам сборки: debug и release не пишут один файл параллельно
+// (с ручным `room.schemaLocation` KSP-задачи гоняются за `schemas/*.json`). Схемы же попадают в androidTest-ресурсы.
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.generateKotlin", "true")
 }
 

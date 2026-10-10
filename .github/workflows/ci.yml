@@ -39,6 +39,8 @@ jobs:
         run: ./gradlew test
       - name: Android Lint (release) и сборка release
         run: ./gradlew lintRelease assembleRelease
+      - name: Сборка debug-APK (подписан отладочным ключом, устанавливается на телефон)
+        run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -46,6 +48,11 @@ jobs:
           path: |
             **/build/reports/**
             **/build/test-results/**
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-unsigned
