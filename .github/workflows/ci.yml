@@ -52,7 +52,9 @@ jobs:
         if: always()
         run: |
           find . -path '*schemas*' -name '*.json' -not -path '*/node_modules/*' | sort
-          for f in $(find app/schemas -name '*.json' | sort); do echo "=== $f"; cat "$f"; echo; done
+          for f in $(find app/schemas -name '*.json' | sort); do
+            echo "=== $f"; sha256sum "$f"; echo "--- gzip+base64 (одной строкой)"; gzip -9n -c "$f" | base64 -w0; echo
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: room-schemas
