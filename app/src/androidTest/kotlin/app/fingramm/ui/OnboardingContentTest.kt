@@ -7,6 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -98,7 +100,8 @@ class OnboardingContentTest {
     fun requiredStepShowsErrorsAndDoesNotAdvance() {
         launch(WizardState(step = SurveyStep.FAMILY))
         click(str(R.string.action_next))
-        rule.onNodeWithText(str(R.string.error_family_size, 1, 20), substring = false).assertIsDisplayed()
+        // Пустые поля: «размер семьи» и «есть ли дети» — оба сообщают «Заполните поле».
+        rule.onAllNodesWithText(str(R.string.error_required)).onFirst().assertIsDisplayed()
         rule.onNodeWithText(str(R.string.survey_title_family)).assertIsDisplayed()
     }
 
