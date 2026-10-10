@@ -1,0 +1,53 @@
+# Дополняет конфигурацию detekt по умолчанию (buildUponDefaultConfig = true).
+complexity:
+  LongMethod:
+    active: true
+    threshold: 80
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 10
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 18
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 25
+    thresholdInClasses: 25
+    ignoreAnnotated: ['Composable']
+  ComplexCondition:
+    threshold: 5
+style:
+  MagicNumber:
+    active: true
+    ignoreAnnotated: ['Composable']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreEnums: true
+    ignoreNamedArgument: true
+    ignoreExtensionFunctions: true
+    ignoreRanges: true
+    excludes: ['**/test/**', '**/androidTest/**', '**/ui/theme/**']
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  ReturnCount:
+    active: true
+    max: 4
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated: ['Preview']
+  WildcardImport:
+    active: true
+  ThrowsCount:
+    active: true
+    max: 3
+naming:
+  FunctionNaming:
+    active: true
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
