@@ -5,6 +5,7 @@ import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.GoalHorizon
 import app.fingramm.domain.model.InputMode
 import app.fingramm.domain.model.MainGoalKind
+import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.SavingsPlace
 import app.fingramm.domain.model.TimeCommitment
 import org.junit.Assert.assertEquals
@@ -123,4 +124,15 @@ class SurveyMapperTest {
         result.assets,
         result.debts,
     )
+}
+
+class ReminderDefaultsTest {
+    @Test
+    fun `suggested mode follows time commitment`() {
+        assertEquals(ReminderMode.DAILY_EVENING, ReminderDefaults.suggested(TimeCommitment.DAILY))
+        assertEquals(ReminderMode.DAILY_EVENING, ReminderDefaults.suggested(TimeCommitment.FEW_MINUTES_DAILY))
+        assertEquals(ReminderMode.WEEKLY, ReminderDefaults.suggested(TimeCommitment.WEEKLY))
+        assertEquals(ReminderMode.WEEKLY, ReminderDefaults.suggested(TimeCommitment.MONTHLY))
+        assertEquals(ReminderMode.OFF, ReminderDefaults.suggested(null))
+    }
 }
