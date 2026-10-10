@@ -287,8 +287,7 @@ private fun CushionStep(draft: SurveyDraft, errors: List<SurveyError>, onChange:
             onValueChange = { value ->
                 onChange {
                     it.copy(
-                        savings = it.savings.map {
-                                s ->
+                        savings = it.savings.map { s ->
                             if (s.place == entry.place) s.copy(amountMinor = value) else s
                         },
                     )

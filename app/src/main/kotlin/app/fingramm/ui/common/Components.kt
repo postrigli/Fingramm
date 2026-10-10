@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -91,15 +92,22 @@ fun ScreenColumn(
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(16.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = verticalArrangement,
-        content = content,
-    )
+    // На широких экранах (планшеты, ландшафт) контент остаётся читаемой колонкой по центру.
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = MAX_CONTENT_WIDTH)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = verticalArrangement,
+            content = content,
+        )
+    }
 }
+
+/** Максимальная ширина колонки контента. */
+val MAX_CONTENT_WIDTH = 640.dp
 
 @Composable
 fun LoadingBox(modifier: Modifier = Modifier) {

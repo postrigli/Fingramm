@@ -87,8 +87,7 @@ class TransactionEditViewModel @Inject constructor(
         viewModelScope.launch {
             usage = statsRepository.categoryUsage(type).first()
             _state.update {
-                val keep = it.categoryId?.takeIf {
-                        selected ->
+                val keep = it.categoryId?.takeIf { selected ->
                     allCategories.firstOrNull { c -> c.id == selected }?.type == type
                 }
                 it.copy(type = type, categoryId = keep, categories = visibleCategories(type, keep))

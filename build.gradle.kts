@@ -19,5 +19,6 @@ subprojects {
         buildUponDefaultConfig = true
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         parallel = true
+        source.setFrom(files("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin"))
     }
 }

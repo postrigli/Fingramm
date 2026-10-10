@@ -88,8 +88,7 @@ fun AmountRowsEditor(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = row.name,
-                    onValueChange = {
-                            name ->
+                    onValueChange = { name ->
                         onRowsChange(rows.toMutableList().also { it[index] = row.copy(name = name) })
                     },
                     label = { Text(nameLabel) },

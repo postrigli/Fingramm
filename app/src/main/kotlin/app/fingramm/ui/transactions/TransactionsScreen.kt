@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -81,6 +82,7 @@ import app.fingramm.domain.money.Money
 import app.fingramm.domain.recurring.PendingOccurrence
 import app.fingramm.domain.stats.LimitStatus
 import app.fingramm.ui.common.EmptyState
+import app.fingramm.ui.common.MAX_CONTENT_WIDTH
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.formatDate
 import app.fingramm.ui.common.formatMonth
@@ -118,63 +120,65 @@ fun TransactionsScreen(
             }
         },
     ) { padding ->
-        LazyColumn(
-            Modifier
-                .padding(padding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = "overview") { state.overview?.let { OverviewCard(state, it, viewModel) } }
-            if (state.pending.isNotEmpty()) {
-                item(key = "pending") {
-                    Card(Modifier.fillMaxWidth().clickable { showPending = true }) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.pending_banner, state.pending.size),
-                                Modifier.weight(1f),
-                                style = MaterialTheme.typography.titleSmall,
-                            )
-                            Text(stringResource(R.string.pending_review), color = MaterialTheme.colorScheme.primary)
+        Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            LazyColumn(
+                Modifier
+                    .widthIn(max = MAX_CONTENT_WIDTH)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(key = "overview") { state.overview?.let { OverviewCard(state, it, viewModel) } }
+                if (state.pending.isNotEmpty()) {
+                    item(key = "pending") {
+                        Card(Modifier.fillMaxWidth().clickable { showPending = true }) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    stringResource(R.string.pending_banner, state.pending.size),
+                                    Modifier.weight(1f),
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                Text(stringResource(R.string.pending_review), color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
-            }
-            item(key = "filters") { FiltersBlock(state, viewModel, onOpenRecurring) }
+                item(key = "filters") { FiltersBlock(state, viewModel, onOpenRecurring) }
 
-            if (state.groups.isEmpty() && !state.loading) {
-                item(key = "empty") {
-                    if (state.isFiltered) {
-                        EmptyState(
-                            stringResource(R.string.transactions_nothing_found),
-                            stringResource(R.string.transactions_nothing_found_hint),
-                        )
-                    } else {
-                        EmptyState(
-                            stringResource(R.string.transactions_empty_title),
-                            stringResource(R.string.transactions_empty_message),
-                            action = { Button(onClick = onAdd) { Text(stringResource(R.string.transaction_add)) } },
+                if (state.groups.isEmpty() && !state.loading) {
+                    item(key = "empty") {
+                        if (state.isFiltered) {
+                            EmptyState(
+                                stringResource(R.string.transactions_nothing_found),
+                                stringResource(R.string.transactions_nothing_found_hint),
+                            )
+                        } else {
+                            EmptyState(
+                                stringResource(R.string.transactions_empty_title),
+                                stringResource(R.string.transactions_empty_message),
+                                action = { Button(onClick = onAdd) { Text(stringResource(R.string.transaction_add)) } },
+                            )
+                        }
+                    }
+                }
+                state.groups.forEach { group ->
+                    item(key = "day-${group.date}") { DayHeader(group, state) }
+                    items(group.items, key = { it.id }) { tx ->
+                        TransactionRow(
+                            tx = tx,
+                            category = state.categoriesById[tx.categoryId],
+                            currency = state.currency,
+                            onClick = { onEdit(tx.id) },
+                            onDelete = { viewModel.delete(tx) },
                         )
                     }
                 }
-            }
-            state.groups.forEach { group ->
-                item(key = "day-${group.date}") { DayHeader(group, state) }
-                items(group.items, key = { it.id }) { tx ->
-                    TransactionRow(
-                        tx = tx,
-                        category = state.categoriesById[tx.categoryId],
-                        currency = state.currency,
-                        onClick = { onEdit(tx.id) },
-                        onDelete = { viewModel.delete(tx) },
-                    )
-                }
-            }
-            if (state.hasMore) {
-                item(key = "more") {
-                    LaunchedEffect(state.filters.limit) { viewModel.loadMore() }
-                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
+                if (state.hasMore) {
+                    item(key = "more") {
+                        LaunchedEffect(state.filters.limit) { viewModel.loadMore() }
+                        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }

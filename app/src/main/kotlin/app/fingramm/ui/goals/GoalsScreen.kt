@@ -3,6 +3,7 @@
 package app.fingramm.ui.goals
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -55,6 +58,7 @@ import app.fingramm.ui.common.ConfirmDialog
 import app.fingramm.ui.common.EmptyState
 import app.fingramm.ui.common.LoadingBox
 import app.fingramm.ui.common.LocalCurrency
+import app.fingramm.ui.common.MAX_CONTENT_WIDTH
 import app.fingramm.ui.common.MoneyField
 import app.fingramm.ui.common.PrimaryButton
 import app.fingramm.ui.common.ScreenColumn
@@ -82,33 +86,38 @@ fun GoalsScreen(onAdd: () -> Unit, onEdit: (Long) -> Unit, viewModel: GoalsViewM
                 modifier = Modifier.padding(padding),
                 action = { Button(onClick = onAdd) { Text(stringResource(R.string.goal_add)) } },
             )
-            else -> LazyColumn(
-                Modifier
-                    .padding(padding)
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    Text(
-                        stringResource(R.string.goals_flow_note, Money.format(state.monthlyFlowMinor, state.currency)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (state.year.isNotEmpty()) {
-                    item { SectionTitle(stringResource(R.string.goals_year)) }
-                    items(
-                        state.year,
-                        key = { it.goal.id },
-                    ) { GoalCard(it, state, onEdit = onEdit, onTopUp = { topUp = it }) }
-                }
-                if (state.mid.isNotEmpty()) {
-                    item { SectionTitle(stringResource(R.string.goals_mid)) }
-                    items(
-                        state.mid,
-                        key = { it.goal.id },
-                    ) { GoalCard(it, state, onEdit = onEdit, onTopUp = { topUp = it }) }
+            else -> Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                LazyColumn(
+                    Modifier
+                        .widthIn(max = MAX_CONTENT_WIDTH)
+                        .fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        Text(
+                            stringResource(
+                                R.string.goals_flow_note,
+                                Money.format(state.monthlyFlowMinor, state.currency),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (state.year.isNotEmpty()) {
+                        item { SectionTitle(stringResource(R.string.goals_year)) }
+                        items(
+                            state.year,
+                            key = { it.goal.id },
+                        ) { GoalCard(it, state, onEdit = onEdit, onTopUp = { topUp = it }) }
+                    }
+                    if (state.mid.isNotEmpty()) {
+                        item { SectionTitle(stringResource(R.string.goals_mid)) }
+                        items(
+                            state.mid,
+                            key = { it.goal.id },
+                        ) { GoalCard(it, state, onEdit = onEdit, onTopUp = { topUp = it }) }
+                    }
                 }
             }
         }

@@ -130,9 +130,8 @@ class BackupViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            budgetRepository.profile.collect {
-                    p ->
-                _state.update { it.copy(hasData = p != null) }
+            budgetRepository.profile.collect { profile ->
+                _state.update { it.copy(hasData = profile != null) }
             }
         }
     }
@@ -244,7 +243,7 @@ class BackupViewModel @Inject constructor(
 
     private fun read(uri: Uri): String {
         val stream = resolver.openInputStream(uri) ?: throw IOException("openInputStream returned null")
-        stream.use { input ->
+        return stream.use { input ->
             val output = ByteArrayOutputStream()
             val chunk = ByteArray(READ_CHUNK_BYTES)
             var total = 0
@@ -255,7 +254,7 @@ class BackupViewModel @Inject constructor(
                 if (total > MAX_IMPORT_BYTES) throw IOException("file too large")
                 output.write(chunk, 0, count)
             }
-            return output.toString(Charsets.UTF_8.name())
+            output.toString(Charsets.UTF_8.name())
         }
     }
 

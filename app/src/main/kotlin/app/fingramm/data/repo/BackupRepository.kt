@@ -6,6 +6,7 @@ import app.fingramm.data.toDomain
 import app.fingramm.data.toEntity
 import app.fingramm.domain.backup.BackupData
 import app.fingramm.domain.backup.BackupMerger
+import app.fingramm.domain.model.ReminderSettings
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,9 +18,14 @@ class BackupRepository @Inject constructor(
     private val db: AppDatabase,
     private val settings: SettingsRepository,
 ) {
-    suspend fun snapshot(): BackupData = db.withTransaction {
+    suspend fun snapshot(): BackupData {
+        val reminder = settings.current().reminder
+        return db.withTransaction { readAll(reminder) }
+    }
+
+    private suspend fun readAll(reminder: ReminderSettings): BackupData {
         val profileDao = db.profileDao()
-        BackupData(
+        return BackupData(
             profile = profileDao.getProfile()?.toDomain(),
             survey = profileDao.getSurvey()?.toDomain(),
             incomeSources = profileDao.getIncomeSources().map { it.toDomain() },
@@ -30,7 +36,7 @@ class BackupRepository @Inject constructor(
             recurringTemplates = db.recurringDao().getAll().map { it.toDomain() },
             goals = db.goalDao().getAll().map { it.toDomain() },
             categoryLimits = db.categoryDao().getLimits().map { it.toDomain() },
-            reminder = settings.current().reminder,
+            reminder = reminder,
         )
     }
 
