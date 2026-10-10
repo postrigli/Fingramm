@@ -153,10 +153,10 @@
 - `android`: `ktlintCheck`, `detekt`, `test` (unit-тесты `:app`, включая репозитории на Room in-memory через Robolectric),
   `lintRelease`, `assembleRelease`. Тем самым подтверждены Gradle/AGP, KSP (Room, Hilt), манифест, ресурсы и Android Lint
   уровня error, а предположения о реальных API Room/Hilt/WorkManager/DataStore — в части, которую задействуют эти задачи.
+- `instrumented` (эмулятор API 34): `OnboardingContentTest` (9 тестов) и `MigrationTest` (2 теста) зелёные;
+  схема Room v1 закоммичена в `app/schemas/`.
 
 **Не проверено:**
 
-- Инструментальные тесты (`OnboardingContentTest`, `MigrationTest`) — job `instrumented` запускается вручную, а каталог
-  `app/schemas/` ещё не закоммичен.
 - Работа на устройстве: уведомления и их восстановление после перезагрузки, блокировка, экспорт/импорт через системный
   выбор файлов, внешний вид, доступность с TalkBack.
