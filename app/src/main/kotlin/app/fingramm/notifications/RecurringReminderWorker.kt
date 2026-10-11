@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -28,6 +29,8 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Уведомляет о регулярной операции в день платежа в заданное время и ставит следующее уведомление.
@@ -49,8 +52,9 @@ class RecurringReminderWorker @AssistedInject constructor(
         // Шаблон могли приостановить или снять уведомление уже после постановки задачи.
         if (!template.active || template.notifyAtMinute == null) return Result.success()
         val today = LocalDate.now(clock)
-        val waiting = RecurringSchedule.pending(listOf(template), today).any { it.dueDate == today }
-        if (waiting && canNotify()) show(template)
+        val pending = RecurringSchedule.pending(listOf(template), today)
+        // Уведомляем, только если платёж наступил именно сегодня; просроченные подхватит тот же список.
+        if (pending.any { it.dueDate == today } && canNotify()) show(template, pending.first().dueDate, today)
         scheduler.scheduleNext(template)
         return Result.success()
     }
@@ -63,49 +67,98 @@ class RecurringReminderWorker @AssistedInject constructor(
     }
 
     @android.annotation.SuppressLint("MissingPermission") // разрешение проверено в canNotify()
-    private suspend fun show(template: RecurringTemplate) {
+    private suspend fun show(template: RecurringTemplate, dueDate: LocalDate, today: LocalDate) {
         ensureChannel(context)
         val category = categories.categories.first().firstOrNull { it.id == template.categoryId }
         val currency = budget.profile.first()?.currency ?: CurrencyCode.RUB
         val sign = if (template.type == TransactionType.INCOME) "+" else "−"
         val title = listOf(category?.name, template.note.takeIf { it.isNotBlank() }).filterNotNull().joinToString(" · ")
-        val text = context.getString(
-            R.string.recurring_notification_text,
-            sign + Money.format(template.amountMinor, currency),
-        )
-        val open = PendingIntent.getActivity(
-            context,
-            template.id.toInt(),
-            QuickAction.launchIntent(context, QuickAction.OpenTransactions),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .ifBlank { context.getString(R.string.recurring_notification_title) }
+        val amount = sign + Money.format(template.amountMinor, currency)
+        val text = if (dueDate == today) {
+            amount
+        } else {
+            context.getString(R.string.recurring_notification_text_overdue, amount, dueDate.format(DATE_FORMAT))
+        }
+        val notificationId = notificationId(template.id)
+        // Публичная версия для экрана блокировки: без суммы и категории.
+        val publicVersion = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title.ifBlank { context.getString(R.string.recurring_notification_title) })
+            .setContentTitle(context.getString(R.string.recurring_notification_title))
+            .setContentText(context.getString(R.string.recurring_notification_public))
+            .build()
+        val confirm = broadcast(template.id, notificationId, RecurringNotificationReceiver.ACTION_CONFIRM, KIND_CONFIRM)
+        val cancel = broadcast(template.id, notificationId, RecurringNotificationReceiver.ACTION_CANCEL, KIND_CANCEL)
+        val edit = activity(template.id, notificationId, KIND_EDIT, QuickAction.EditPending(template.id))
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setContentIntent(open)
+            .setContentIntent(activity(template.id, notificationId, KIND_OPEN, QuickAction.OpenPending))
+            .addAction(0, context.getString(R.string.recurring_action_confirm), confirm)
+            .addAction(0, context.getString(R.string.recurring_action_edit), edit)
+            .addAction(0, context.getString(R.string.recurring_action_cancel), cancel)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_BASE + template.id.toInt(), notification)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicVersion)
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
+
+    private fun activity(templateId: Long, notificationId: Int, kind: Int, action: QuickAction): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            requestCode(templateId, kind),
+            QuickAction.launchIntent(context, action, notificationId),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+    private fun broadcast(templateId: Long, notificationId: Int, action: String, kind: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            requestCode(templateId, kind),
+            Intent(context, RecurringNotificationReceiver::class.java)
+                .setAction(action)
+                .putExtra(RecurringNotificationReceiver.EXTRA_TEMPLATE_ID, templateId)
+                .putExtra(RecurringNotificationReceiver.EXTRA_NOTIFICATION_ID, notificationId),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
     companion object {
         const val KEY_TEMPLATE_ID = "templateId"
-        const val CHANNEL_ID = "recurring"
+
+        /** Канал с высокой важностью: уведомление всплывает поверх работающего экрана. */
+        const val CHANNEL_ID = "recurring_alerts"
+
+        /** Прежний канал с обычной важностью: важность существующего канала менять нельзя, поэтому он заменён. */
+        private const val LEGACY_CHANNEL_ID = "recurring"
         private const val NOTIFICATION_ID_BASE = 2000
+        private const val KIND_OPEN = 0
+        private const val KIND_CONFIRM = 1
+        private const val KIND_EDIT = 2
+        private const val KIND_CANCEL = 3
+        private const val KINDS = 4
+        private val DATE_FORMAT = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("ru"))
+
+        fun notificationId(templateId: Long): Int = NOTIFICATION_ID_BASE + templateId.toInt()
+
+        /** PendingIntent различаются только кодом запроса (extras не учитываются), поэтому код уникален на кнопку. */
+        private fun requestCode(templateId: Long, kind: Int): Int = templateId.toInt() * KINDS + kind
 
         /** Канал «Регулярные операции» (Android 8+). Безопасно вызывать повторно. */
         fun ensureChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 context.getString(R.string.recurring_channel_name),
-                NotificationManager.IMPORTANCE_DEFAULT,
+                NotificationManager.IMPORTANCE_HIGH,
             ).apply { description = context.getString(R.string.recurring_channel_description) }
-            context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.fingramm.data.repo.CategoryRepository
+import app.fingramm.data.repo.RecurringRepository
 import app.fingramm.data.repo.StatsRepository
 import app.fingramm.data.repo.TransactionRepository
 import app.fingramm.domain.model.AccountType
@@ -47,9 +48,16 @@ class TransactionEditViewModel @Inject constructor(
     private val transactions: TransactionRepository,
     private val categoryRepository: CategoryRepository,
     private val statsRepository: StatsRepository,
+    private val recurring: RecurringRepository,
     private val clock: Clock,
 ) : ViewModel() {
     private val id: Long? = savedStateHandle.get<Long>("id")?.takeIf { it > 0 }
+
+    /**
+     * Регулярная операция, чьё ожидающее списание правится в этой форме (кнопка «Изменить» в уведомлении или в листе
+     * ожидающих). Форма заполняется её данными, а сохранение подтверждает списание и сдвигает шаблон.
+     */
+    private val templateId: Long? = savedStateHandle.get<Long>("template")?.takeIf { it > 0 }
 
     /** Тип новой операции: приходит из виджета («Расход»/«Доход»), по умолчанию расход. */
     private val initialType: TransactionType = savedStateHandle.get<String>("type")
@@ -71,8 +79,8 @@ class TransactionEditViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             allCategories = categoryRepository.categories.first()
-            val existing = id?.let { transactions.get(it) }
-            original = existing
+            val existing = id?.let { transactions.get(it) } ?: templateId?.let { prefillFromTemplate(it) }
+            original = existing?.takeIf { id != null }
             val type = existing?.type ?: initialType
             usage = statsRepository.categoryUsage(type).first()
             _state.update {
@@ -88,6 +96,20 @@ class TransactionEditViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /** Данные шаблона как черновик новой операции; дата — ближайшее необработанное списание (но не позже сегодня). */
+    private suspend fun prefillFromTemplate(templateId: Long): Transaction? {
+        val template = recurring.get(templateId) ?: return null
+        val today = LocalDate.now(clock)
+        return Transaction(
+            type = template.type,
+            amountMinor = template.amountMinor,
+            categoryId = template.categoryId,
+            date = minOf(template.nextDueDate, today),
+            note = template.note,
+            accountType = template.accountType,
+        )
     }
 
     fun setType(type: TransactionType) {
@@ -135,7 +157,9 @@ class TransactionEditViewModel @Inject constructor(
                 recurringId = base?.recurringId,
                 createdAt = base?.createdAt ?: 0,
             )
-            if (base == null) {
+            if (base == null && templateId != null) {
+                recurring.confirmEdited(templateId, transaction, LocalDate.now(clock), System.currentTimeMillis())
+            } else if (base == null) {
                 transactions.add(
                     transaction,
                     System.currentTimeMillis(),

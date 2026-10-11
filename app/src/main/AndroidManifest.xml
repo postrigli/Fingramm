@@ -59,6 +59,11 @@
                 android:resource="@xml/month_widget_info" />
         </receiver>
 
+        <!-- Кнопки «Подтвердить»/«Отменить» в уведомлении о регулярной операции. Снаружи недоступен. -->
+        <receiver
+            android:name=".notifications.RecurringNotificationReceiver"
+            android:exported="false" />
+
         <!-- WorkManager инициализируется вручную в FingrammApp (нужна HiltWorkerFactory). -->
         <provider
             android:name="androidx.startup.InitializationProvider"

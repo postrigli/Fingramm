@@ -75,6 +75,8 @@ fun AppNavigation(
     onActionHandled: () -> Unit = {},
 ) {
     val navController = rememberNavController()
+    // Лист ожидающих подтверждения открывается из уведомления, когда экран «Операции» уже на месте.
+    var openPendingSheet by remember { mutableStateOf(false) }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
@@ -122,6 +124,9 @@ fun AppNavigation(
             }
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(
+                    openPending = openPendingSheet,
+                    onPendingOpened = { openPendingSheet = false },
+                    onEditPending = { navController.navigate(Routes.transactionEdit(template = it)) },
                     onAdd = { navController.navigate(Routes.transactionEdit()) },
                     onEdit = { navController.navigate(Routes.transactionEdit(it)) },
                     onOpenRecurring = { navController.navigate(Routes.RECURRING) },
@@ -151,6 +156,10 @@ fun AppNavigation(
                         type = NavType.StringType
                         nullable = true
                         defaultValue = null
+                    },
+                    navArgument("template") {
+                        type = NavType.LongType
+                        defaultValue = Routes.NEW
                     },
                 ),
             ) { TransactionEditScreen(onBack = { navController.popBackStack() }) }
@@ -211,7 +220,10 @@ fun AppNavigation(
     val graphReady = backStack != null
     LaunchedEffect(pendingAction, hasProfile, graphReady) {
         if (pendingAction != null && hasProfile != null && graphReady) {
-            if (hasProfile) navController.perform(pendingAction)
+            if (hasProfile) {
+                if (pendingAction == QuickAction.OpenPending) openPendingSheet = true
+                navController.perform(pendingAction)
+            }
             onActionHandled()
         }
     }
@@ -242,7 +254,11 @@ private fun NavHostController.perform(action: QuickAction) {
             goFresh(Routes.DASHBOARD)
             navigate(Routes.transactionEdit(type = action.type))
         }
-        QuickAction.OpenTransactions -> goFresh(Routes.TRANSACTIONS)
+        QuickAction.OpenPending -> goFresh(Routes.TRANSACTIONS)
+        is QuickAction.EditPending -> {
+            goFresh(Routes.TRANSACTIONS)
+            navigate(Routes.transactionEdit(template = action.templateId))
+        }
         QuickAction.OpenDashboard -> goFresh(Routes.DASHBOARD)
     }
 }

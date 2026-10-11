@@ -22,6 +22,8 @@ class QuickActionTest {
         QuickAction.AddTransaction(TransactionType.EXPENSE),
         QuickAction.AddTransaction(TransactionType.INCOME),
         QuickAction.OpenDashboard,
+        QuickAction.OpenPending,
+        QuickAction.EditPending(7),
     )
 
     @Test
@@ -57,5 +59,23 @@ class QuickActionTest {
     fun `extras cannot change which action is requested`() {
         val intent = Intent(QuickAction.ACTION_ADD_EXPENSE).putExtra("type", "INCOME")
         assertEquals(QuickAction.AddTransaction(TransactionType.EXPENSE), QuickAction.fromIntent(intent))
+    }
+
+    @Test
+    fun `edit pending carries its template id and needs a valid one`() {
+        val intent = QuickAction.launchIntent(context, QuickAction.EditPending(42))
+        assertEquals(QuickAction.EditPending(42), QuickAction.fromIntent(intent))
+        assertNull(QuickAction.fromIntent(Intent(QuickAction.ACTION_EDIT_PENDING)))
+        val negative = Intent(QuickAction.ACTION_EDIT_PENDING).putExtra(QuickAction.EXTRA_TEMPLATE_ID, -3L)
+        assertNull(QuickAction.fromIntent(negative))
+    }
+
+    @Test
+    fun `notification id travels with the launch intent only when given`() {
+        val plain = QuickAction.launchIntent(context, QuickAction.OpenPending)
+        assertNull(QuickAction.notificationIdFrom(plain))
+        val fromNotification = QuickAction.launchIntent(context, QuickAction.OpenPending, notificationId = 2005)
+        assertEquals(2005, QuickAction.notificationIdFrom(fromNotification))
+        assertEquals(QuickAction.OpenPending, QuickAction.fromIntent(fromNotification))
     }
 }

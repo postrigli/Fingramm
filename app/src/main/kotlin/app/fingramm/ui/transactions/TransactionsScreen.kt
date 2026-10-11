@@ -97,6 +97,9 @@ fun TransactionsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onOpenRecurring: () -> Unit,
+    onEditPending: (templateId: Long) -> Unit,
+    openPending: Boolean = false,
+    onPendingOpened: () -> Unit = {},
     viewModel: TransactionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -110,6 +113,13 @@ fun TransactionsScreen(
         }
     }
     var showPending by remember { mutableStateOf(false) }
+    // Нажатие на уведомление открывает лист ожидающих сразу; флаг сбрасываем, чтобы лист не всплывал повторно.
+    LaunchedEffect(openPending) {
+        if (openPending) {
+            showPending = true
+            onPendingOpened()
+        }
+    }
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.nav_transactions)) }) },
@@ -191,6 +201,10 @@ fun TransactionsScreen(
             state = state,
             onConfirm = viewModel::confirmPending,
             onSkip = viewModel::skipPending,
+            onEdit = {
+                showPending = false
+                onEditPending(it.template.id)
+            },
             onDismiss = { showPending = false },
         )
     }
@@ -539,6 +553,7 @@ private fun PendingSheet(
     state: TransactionsUiState,
     onConfirm: (PendingOccurrence) -> Unit,
     onSkip: (PendingOccurrence) -> Unit,
+    onEdit: (PendingOccurrence) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -581,7 +596,10 @@ private fun PendingSheet(
                             Button(onClick = { onConfirm(item) }, enabled = actionable) {
                                 Text(stringResource(R.string.pending_confirm))
                             }
-                            OutlinedButton(onClick = { onSkip(item) }, enabled = actionable) {
+                            OutlinedButton(onClick = { onEdit(item) }, enabled = actionable) {
+                                Text(stringResource(R.string.pending_edit))
+                            }
+                            TextButton(onClick = { onSkip(item) }, enabled = actionable) {
                                 Text(stringResource(R.string.pending_skip))
                             }
                         }

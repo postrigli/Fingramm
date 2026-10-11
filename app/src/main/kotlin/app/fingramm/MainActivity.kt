@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.FragmentActivity
 import app.fingramm.ui.AppRoot
 import app.fingramm.ui.AppViewModel
@@ -24,7 +25,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         // Повторно (после поворота или восстановления процесса) действие виджета не выполняем: оно уже отработало.
-        if (savedInstanceState == null) QuickAction.fromIntent(intent)?.let(viewModel::offerAction)
+        if (savedInstanceState == null) handleLaunchIntent(intent)
         setContent {
             FingrammTheme {
                 Surface(Modifier.fillMaxSize()) { AppRoot(viewModel) }
@@ -36,7 +37,13 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleLaunchIntent(intent)
+    }
+
+    /** Действие виджета или уведомления передаётся в модель; уведомление, из которого пришли, убирается. */
+    private fun handleLaunchIntent(intent: Intent) {
         QuickAction.fromIntent(intent)?.let(viewModel::offerAction)
+        QuickAction.notificationIdFrom(intent)?.let { NotificationManagerCompat.from(this).cancel(it) }
     }
 
     override fun onStop() {
