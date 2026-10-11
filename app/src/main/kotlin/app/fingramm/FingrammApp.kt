@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import app.fingramm.data.repo.SettingsRepository
+import app.fingramm.notifications.RecurringReminderScheduler
+import app.fingramm.notifications.RecurringReminderWorker
 import app.fingramm.notifications.ReminderScheduler
 import app.fingramm.notifications.ReminderWorker
 import app.fingramm.widget.WidgetRefresher
@@ -22,6 +24,8 @@ class FingrammApp : Application(), Configuration.Provider {
 
     @Inject lateinit var reminderScheduler: ReminderScheduler
 
+    @Inject lateinit var recurringReminders: RecurringReminderScheduler
+
     @Inject lateinit var widgetRefresher: WidgetRefresher
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -32,8 +36,11 @@ class FingrammApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         ReminderWorker.ensureChannel(this)
+        RecurringReminderWorker.ensureChannel(this)
         // Пересчитываем ближайшее срабатывание при каждом запуске: подхватывает смену часового пояса и перевод часов.
         appScope.launch { reminderScheduler.apply(settings.current().reminder) }
+        // То же для уведомлений о регулярных операциях: пересчёт при каждом запуске подхватывает смену пояса и времени.
+        appScope.launch { recurringReminders.syncAll() }
         widgetRefresher.start(appScope)
     }
 }

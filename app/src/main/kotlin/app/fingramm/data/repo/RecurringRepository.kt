@@ -8,6 +8,7 @@ import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.recurring.PendingOccurrence
 import app.fingramm.domain.recurring.RecurringSchedule
+import app.fingramm.domain.recurring.recurrence
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -33,7 +34,7 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 
-    /** Подтверждение ожидающего списания: создаёт операцию и сдвигает шаблон на следующий месяц. */
+    /** Подтверждение ожидающего списания: создаёт операцию и сдвигает шаблон на следующую дату по его правилу. */
     suspend fun confirm(occurrence: PendingOccurrence, nowMillis: Long) {
         db.withTransaction {
             val template = dao.getById(occurrence.template.id) ?: return@withTransaction
@@ -54,6 +55,26 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * Подтверждение ожидающего списания с правками: сохраняет операцию, заполненную пользователем (сумма, категория,
+     * дата могли измениться), связывает её с шаблоном и сдвигает шаблон. Если по шаблону сейчас ничего не ждёт
+     * (его уже обработали или удалили), операция просто сохраняется без связи и без сдвига.
+     * Возвращает id созданной операции.
+     */
+    suspend fun confirmEdited(templateId: Long, edited: Transaction, today: LocalDate, nowMillis: Long): Long =
+        db.withTransaction {
+            val template = dao.getById(templateId)
+            val waiting = template != null && !template.nextDueDate.isAfter(today)
+            val saved = edited.copy(
+                id = 0,
+                recurringId = if (waiting) templateId else null,
+                createdAt = nowMillis,
+            )
+            val id = transactions.insert(saved.toEntity())
+            if (waiting && template != null) advance(templateId, template.nextDueDate)
+            id
+        }
+
     /** Пропуск списания без создания операции. */
     suspend fun skip(occurrence: PendingOccurrence) {
         db.withTransaction { advance(occurrence.template.id, occurrence.dueDate) }
@@ -63,7 +84,8 @@ class RecurringRepository @Inject constructor(private val db: AppDatabase) {
         val template = dao.getById(templateId) ?: return
         // Шаблон сдвигается только если обработана именно ближайшая дата (защита от двойного нажатия).
         if (template.nextDueDate == handledDue) {
-            dao.update(template.copy(nextDueDate = RecurringSchedule.nextAfter(handledDue, template.dayOfMonth)))
+            val next = RecurringSchedule.nextAfter(handledDue, template.toDomain().recurrence)
+            dao.update(template.copy(nextDueDate = next))
         }
     }
 }

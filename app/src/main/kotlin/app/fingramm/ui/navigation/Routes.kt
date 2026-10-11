@@ -10,7 +10,7 @@ object Routes {
     const val GOALS = "goals"
     const val MORE = "more"
 
-    const val TRANSACTION_EDIT = "transaction/edit?id={id}&type={type}"
+    const val TRANSACTION_EDIT = "transaction/edit?id={id}&type={type}&template={template}"
     const val GOAL_EDIT = "goal/edit?id={id}"
     const val CATEGORIES = "categories"
     const val CATEGORY_EDIT = "category/edit?id={id}&type={type}"
@@ -24,9 +24,14 @@ object Routes {
 
     val topLevel = listOf(DASHBOARD, TRANSACTIONS, GOALS, MORE)
 
-    /** [type] задаёт тип новой операции (из виджета); для существующей записи игнорируется. */
-    fun transactionEdit(id: Long? = null, type: TransactionType? = null) =
-        "transaction/edit?id=${id ?: NEW}" + (type?.let { "&type=${it.name}" } ?: "")
+    /**
+     * [type] задаёт тип новой операции (из виджета); для существующей записи игнорируется. [template] — id
+     * регулярной операции: форма заполняется её данными, а сохранение подтверждает ожидающее списание.
+     */
+    fun transactionEdit(id: Long? = null, type: TransactionType? = null, template: Long? = null) =
+        "transaction/edit?id=${id ?: NEW}" +
+            (type?.let { "&type=${it.name}" } ?: "") +
+            (template?.let { "&template=$it" } ?: "")
 
     fun goalEdit(id: Long? = null) = "goal/edit?id=${id ?: NEW}"
 

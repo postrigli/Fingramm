@@ -19,6 +19,7 @@ import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CategoryKind
 import app.fingramm.domain.model.DefaultCategories
 import app.fingramm.domain.model.GoalHorizon
+import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
@@ -33,6 +34,7 @@ import app.fingramm.domain.survey.GoalDraft
 import app.fingramm.domain.survey.SurveyDraft
 import app.fingramm.domain.survey.SurveyMapper
 import app.fingramm.domain.survey.SurveyResult
+import app.fingramm.notifications.RecurringOccurrenceHandler
 import app.fingramm.widget.WidgetStateLoader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -552,5 +554,138 @@ class RepositoriesTest {
         assertEquals(25, state.startDay)
         assertEquals(40_000L, state.expensesMinor)
         assertEquals(70_000L, state.incomeMinor)
+    }
+
+    // ---------- Регулярные операции по дням недели ----------
+
+    private fun weeklyTemplate(next: LocalDate) = template(next).copy(
+        dayOfMonth = 1,
+        frequency = RecurrenceFrequency.WEEKLY,
+        weekdays = setOf(1, 3, 5),
+        notifyAtMinute = 8 * 60 + 30,
+    )
+
+    @Test
+    fun aWeeklyTemplateKeepsItsDaysAndNotificationTime() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12)))
+        val saved = checkNotNull(recurring.get(id))
+        assertEquals(RecurrenceFrequency.WEEKLY, saved.frequency)
+        assertEquals(setOf(1, 3, 5), saved.weekdays)
+        assertEquals(8 * 60 + 30, saved.notifyAtMinute)
+    }
+
+    @Test
+    fun aTemplateWithoutNotificationStaysWithoutIt() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 10, 5)))
+        val saved = checkNotNull(recurring.get(id))
+        assertEquals(RecurrenceFrequency.MONTHLY, saved.frequency)
+        assertEquals(emptySet<Int>(), saved.weekdays)
+        assertEquals(null, saved.notifyAtMinute)
+    }
+
+    @Test
+    fun handlingAWeeklyOccurrenceMovesItToTheNextSelectedWeekday() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12))) // понедельник
+        recurring.confirm(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 12)), 1)
+        assertEquals(LocalDate.of(2026, 10, 14), recurring.get(id)?.nextDueDate) // среда
+        recurring.skip(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 14)))
+        assertEquals(LocalDate.of(2026, 10, 16), recurring.get(id)?.nextDueDate) // пятница
+        recurring.skip(PendingOccurrence(checkNotNull(recurring.get(id)), LocalDate.of(2026, 10, 16)))
+        assertEquals(LocalDate.of(2026, 10, 19), recurring.get(id)?.nextDueDate) // снова понедельник
+        val created = transactions.observe(TransactionFilter(), categories.categories.first(), 10).first()
+        assertEquals(1, created.size) // создана только подтверждённая; пропущенные операций не создают
+    }
+
+    @Test
+    fun weeklyTemplatesSurviveBackupAndRestore() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 12)))
+        val saved = checkNotNull(recurring.get(id))
+        val snapshot = backup.snapshot()
+        backup.wipe()
+        backup.importData(snapshot, ImportMode.REPLACE)
+        assertEquals(saved, recurring.templates.first().single())
+    }
+
+    // ---------- Кнопки уведомления и правка ожидающего списания ----------
+
+    private fun handler() = RecurringOccurrenceHandler(
+        recurring,
+        Clock.fixed(today.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
+    )
+
+    @Test
+    fun confirmingFromTheNotificationCreatesTheOperationOnlyOnce() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 10, 5)))
+        assertTrue(handler().confirm(id))
+        assertTrue(!handler().confirm(id)) // следующее списание в ноябре, ждать больше нечего
+        val created = transactions.observe(TransactionFilter(), categories.categories.first(), 10).first()
+        assertEquals(1, created.size)
+        assertEquals(id, created.single().recurringId)
+        assertEquals(LocalDate.of(2026, 11, 5), recurring.get(id)?.nextDueDate)
+    }
+
+    @Test
+    fun cancellingFromTheNotificationSkipsWithoutCreatingAnything() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 10, 5)))
+        assertTrue(handler().skip(id))
+        assertTrue(!handler().skip(id))
+        assertTrue(transactions.observe(TransactionFilter(), categories.categories.first(), 10).first().isEmpty())
+        assertEquals(LocalDate.of(2026, 11, 5), recurring.get(id)?.nextDueDate)
+    }
+
+    @Test
+    fun notificationButtonsHandleTheOldestOverdueOccurrenceFirst() = runBlocking {
+        onboard()
+        val id = recurring.save(weeklyTemplate(LocalDate.of(2026, 10, 5))) // ждут 5, 7 и 9 октября
+        assertEquals(LocalDate.of(2026, 10, 5), handler().oldestPending(id)?.dueDate)
+        handler().skip(id)
+        assertEquals(LocalDate.of(2026, 10, 7), handler().oldestPending(id)?.dueDate)
+    }
+
+    @Test
+    fun notificationButtonsIgnoreAMissingTemplate() = runBlocking {
+        assertTrue(!handler().confirm(404))
+        assertTrue(!handler().skip(404))
+    }
+
+    @Test
+    fun confirmingAnEditedOccurrenceKeepsTheEditsAndMovesTheTemplate() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 10, 5)))
+        val edited = Transaction(
+            type = TransactionType.EXPENSE,
+            amountMinor = 1_234_500,
+            categoryId = categoryId("loans"),
+            date = LocalDate.of(2026, 10, 6),
+            note = "Ипотека, с доплатой",
+        )
+        val savedId = recurring.confirmEdited(id, edited, today, 5_000)
+        val saved = checkNotNull(transactions.get(savedId))
+        assertEquals(1_234_500, saved.amountMinor)
+        assertEquals(LocalDate.of(2026, 10, 6), saved.date)
+        assertEquals(id, saved.recurringId)
+        assertEquals(5_000, saved.createdAt)
+        assertEquals(LocalDate.of(2026, 11, 5), recurring.get(id)?.nextDueDate)
+    }
+
+    @Test
+    fun anEditedOccurrenceThatIsNoLongerWaitingIsStillSavedButDoesNotMoveTheTemplate() = runBlocking {
+        onboard()
+        val id = recurring.save(template(LocalDate.of(2026, 11, 5))) // ближайшее списание ещё впереди
+        val edited = Transaction(
+            type = TransactionType.EXPENSE,
+            amountMinor = 700,
+            categoryId = categoryId("loans"),
+            date = today,
+        )
+        val saved = checkNotNull(transactions.get(recurring.confirmEdited(id, edited, today, 1)))
+        assertEquals(null, saved.recurringId)
+        assertEquals(LocalDate.of(2026, 11, 5), recurring.get(id)?.nextDueDate)
     }
 }

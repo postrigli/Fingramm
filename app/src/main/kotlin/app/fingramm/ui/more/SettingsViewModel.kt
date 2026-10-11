@@ -22,7 +22,9 @@ import app.fingramm.domain.backup.CsvLabels
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
+import app.fingramm.notifications.RecurringReminderScheduler
 import app.fingramm.notifications.ReminderScheduler
+import app.fingramm.security.ExternalFlowGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +50,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val scheduler: ReminderScheduler,
+    private val recurringReminders: RecurringReminderScheduler,
     private val backup: BackupRepository,
 ) : ViewModel() {
     val state: StateFlow<AppSettings> =
@@ -73,6 +76,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             backup.wipe()
             scheduler.apply(ReminderSettings())
+            recurringReminders.syncAll()
         }
     }
 
@@ -122,7 +126,9 @@ class BackupViewModel @Inject constructor(
     private val backup: BackupRepository,
     private val budgetRepository: BudgetRepository,
     private val scheduler: ReminderScheduler,
+    private val recurringReminders: RecurringReminderScheduler,
     private val settings: SettingsRepository,
+    private val externalFlow: ExternalFlowGuard,
     private val clock: Clock,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BackupUiState())
@@ -140,6 +146,12 @@ class BackupViewModel @Inject constructor(
             }
         }
     }
+
+    /** Вызывается перед открытием системного выбора файла: возвращение из него не должно блокировать приложение. */
+    fun externalFlowStarted() = externalFlow.begin()
+
+    /** Результат выбора файла получен (или он отменён, или окно не открылось). */
+    fun externalFlowFinished() = externalFlow.end()
 
     fun suggestedJsonName(): String = "fingramm-backup-${LocalDate.now(clock)}.json"
 
@@ -223,6 +235,7 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             backup.importData(preview.data, mode)
             scheduler.apply(settings.current().reminder)
+            recurringReminders.syncAll()
             _state.update { it.copy(busy = false) }
             _messages.send(BackupMessage.ImportOk)
         }

@@ -9,9 +9,12 @@ import app.fingramm.data.repo.RecurringRepository
 import app.fingramm.domain.model.AccountType
 import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CurrencyCode
+import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.TransactionType
+import app.fingramm.domain.recurring.Recurrence
 import app.fingramm.domain.recurring.RecurringSchedule
+import app.fingramm.notifications.RecurringReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -60,7 +63,15 @@ data class RecurringFormState(
     val type: TransactionType = TransactionType.EXPENSE,
     val amountMinor: Long? = null,
     val categoryId: Long? = null,
-    val dayOfMonth: Int? = null,
+    val frequency: RecurrenceFrequency = RecurrenceFrequency.MONTHLY,
+    /** День месяца 1–31 для ежемесячного повтора. */
+    val dayOfMonth: Int = 1,
+    /** Дни недели ISO 1–7 для еженедельного повтора. */
+    val weekdays: Set<Int> = emptySet(),
+    /** Напоминать в день платежа. */
+    val notifyEnabled: Boolean = true,
+    /** Время уведомления в минутах от полуночи. */
+    val notifyAtMinute: Int = DEFAULT_NOTIFY_MINUTE,
     val note: String = "",
     val accountType: AccountType? = null,
     val active: Boolean = true,
@@ -69,11 +80,20 @@ data class RecurringFormState(
 ) {
     val amountError: Boolean get() = showErrors && (amountMinor ?: 0L) <= 0L
     val categoryError: Boolean get() = showErrors && categoryId == null
-    val dayError: Boolean get() = showErrors && dayOfMonth !in 1..MAX_DAY
-    val isValid: Boolean get() = (amountMinor ?: 0L) > 0L && categoryId != null && dayOfMonth in 1..MAX_DAY
+    val weekdaysError: Boolean get() = showErrors && frequency == RecurrenceFrequency.WEEKLY && weekdays.isEmpty()
+    val scheduleValid: Boolean
+        get() = when (frequency) {
+            RecurrenceFrequency.MONTHLY -> dayOfMonth in 1..MAX_DAY
+            RecurrenceFrequency.WEEKLY -> weekdays.isNotEmpty()
+        }
+    val isValid: Boolean get() = (amountMinor ?: 0L) > 0L && categoryId != null && scheduleValid
+
+    /** Правило повторения, которое задано в форме. */
+    val recurrence: Recurrence get() = Recurrence(frequency, dayOfMonth, weekdays)
 
     companion object {
         const val MAX_DAY = 31
+        const val DEFAULT_NOTIFY_MINUTE = 9 * 60
     }
 }
 
@@ -82,10 +102,11 @@ class RecurringEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: RecurringRepository,
     private val categoryRepository: CategoryRepository,
+    private val reminders: RecurringReminderScheduler,
     private val clock: Clock,
 ) : ViewModel() {
     private val id: Long? = savedStateHandle.get<Long>("id")?.takeIf { it > 0 }
-    private val _state = MutableStateFlow(RecurringFormState(editingId = id))
+    private val _state = MutableStateFlow(initialState())
     val state: StateFlow<RecurringFormState> = _state.asStateFlow()
 
     private val _done = Channel<Unit>(Channel.BUFFERED)
@@ -106,7 +127,11 @@ class RecurringEditViewModel @Inject constructor(
                     type = type,
                     amountMinor = template?.amountMinor,
                     categoryId = template?.categoryId,
-                    dayOfMonth = template?.dayOfMonth,
+                    frequency = template?.frequency ?: it.frequency,
+                    dayOfMonth = template?.dayOfMonth ?: it.dayOfMonth,
+                    weekdays = template?.weekdays?.takeIf { days -> days.isNotEmpty() } ?: it.weekdays,
+                    notifyEnabled = if (template == null) true else template.notifyAtMinute != null,
+                    notifyAtMinute = template?.notifyAtMinute ?: it.notifyAtMinute,
                     note = template?.note.orEmpty(),
                     accountType = template?.accountType,
                     active = template?.active ?: true,
@@ -127,19 +152,19 @@ class RecurringEditViewModel @Inject constructor(
         val s = _state.value
         val amount = s.amountMinor
         val category = s.categoryId
-        val day = s.dayOfMonth
-        if (!s.isValid || amount == null || category == null || day == null) {
+        if (!s.isValid || amount == null || category == null) {
             _state.update { it.copy(showErrors = true) }
             return
         }
         viewModelScope.launch {
             val base = original
             val today = LocalDate.now(clock)
-            // День изменился или шаблон новый — ближайшее списание пересчитывается от сегодняшней даты.
-            val next = if (base != null && base.dayOfMonth == day) {
+            val rule = s.recurrence
+            // Правило изменилось или шаблон новый: ближайшее списание пересчитывается от сегодняшней даты.
+            val next = if (base != null && base.sameRule(rule)) {
                 base.nextDueDate
             } else {
-                RecurringSchedule.firstDueOnOrAfter(today, day)
+                RecurringSchedule.firstDueOnOrAfter(today, rule)
             }
             repository.save(
                 RecurringTemplate(
@@ -149,11 +174,15 @@ class RecurringEditViewModel @Inject constructor(
                     categoryId = category,
                     note = s.note.trim(),
                     accountType = s.accountType,
-                    dayOfMonth = day,
+                    dayOfMonth = s.dayOfMonth,
                     nextDueDate = next,
                     active = s.active,
+                    frequency = s.frequency,
+                    weekdays = if (s.frequency == RecurrenceFrequency.WEEKLY) s.weekdays else emptySet(),
+                    notifyAtMinute = s.notifyAtMinute.takeIf { s.notifyEnabled },
                 ),
             )
+            reminders.syncAll()
             _done.send(Unit)
         }
     }
@@ -162,8 +191,25 @@ class RecurringEditViewModel @Inject constructor(
         val templateId = original?.id ?: return
         viewModelScope.launch {
             repository.delete(templateId)
+            reminders.syncAll()
             _done.send(Unit)
         }
+    }
+
+    /** Новая операция: ежемесячно в сегодняшний день, по умолчанию с уведомлением в 9:00. */
+    private fun initialState(): RecurringFormState {
+        val today = LocalDate.now(clock)
+        return RecurringFormState(
+            editingId = id,
+            dayOfMonth = today.dayOfMonth,
+            weekdays = setOf(today.dayOfWeek.value),
+        )
+    }
+
+    /** Совпадает ли правило шаблона с тем, что задано в форме (учитывается только значимая часть правила). */
+    private fun RecurringTemplate.sameRule(rule: Recurrence): Boolean = when (rule.frequency) {
+        RecurrenceFrequency.MONTHLY -> frequency == rule.frequency && dayOfMonth == rule.dayOfMonth
+        RecurrenceFrequency.WEEKLY -> frequency == rule.frequency && weekdays == rule.weekdays
     }
 
     private fun visible(type: TransactionType, selected: Long?): List<Category> =

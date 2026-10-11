@@ -2,6 +2,7 @@
 
 package app.fingramm.ui.more
 
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -45,12 +46,15 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel(
 
     val exportJson =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            viewModel.externalFlowFinished()
             uri?.let(viewModel::exportJson)
         }
     val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        viewModel.externalFlowFinished()
         uri?.let(viewModel::exportCsv)
     }
     val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        viewModel.externalFlowFinished()
         uri?.let(viewModel::prepareImport)
     }
 
@@ -80,12 +84,12 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel(
 
             SectionTitle(stringResource(R.string.backup_export_section))
             OutlinedButton(
-                onClick = { exportJson.launch(viewModel.suggestedJsonName()) },
+                onClick = { openSystemPicker(viewModel) { exportJson.launch(viewModel.suggestedJsonName()) } },
                 enabled = state.hasData && !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.backup_export_json)) }
             OutlinedButton(
-                onClick = { exportCsv.launch(viewModel.suggestedCsvName()) },
+                onClick = { openSystemPicker(viewModel) { exportCsv.launch(viewModel.suggestedCsvName()) } },
                 enabled = state.hasData && !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.backup_export_csv)) }
@@ -93,7 +97,7 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel(
 
             SectionTitle(stringResource(R.string.backup_import_section))
             OutlinedButton(
-                onClick = { importPicker.launch(arrayOf("*/*")) },
+                onClick = { openSystemPicker(viewModel) { importPicker.launch(arrayOf("*/*")) } },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.backup_import)) }
@@ -191,3 +195,17 @@ private fun ImportDialog(
 }
 
 private const val MAX_DETAILS = 5
+
+/**
+ * Открывает системное окно выбора файла. Пока оно открыто, приложение в фоне, но не должно блокироваться
+ * ([BackupViewModel.externalFlowStarted]); если окно не удалось открыть, отметка снимается.
+ */
+private inline fun openSystemPicker(viewModel: BackupViewModel, launch: () -> Unit) {
+    viewModel.externalFlowStarted()
+    try {
+        launch()
+    } catch (e: ActivityNotFoundException) {
+        viewModel.externalFlowFinished()
+        throw e
+    }
+}

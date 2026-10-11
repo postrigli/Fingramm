@@ -43,7 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -97,6 +96,9 @@ fun TransactionsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onOpenRecurring: () -> Unit,
+    onEditPending: (templateId: Long) -> Unit,
+    openPending: Boolean = false,
+    onPendingOpened: () -> Unit = {},
     viewModel: TransactionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -110,6 +112,13 @@ fun TransactionsScreen(
         }
     }
     var showPending by remember { mutableStateOf(false) }
+    // Нажатие на уведомление открывает лист ожидающих сразу; флаг сбрасываем, чтобы лист не всплывал повторно.
+    LaunchedEffect(openPending) {
+        if (openPending) {
+            showPending = true
+            onPendingOpened()
+        }
+    }
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.nav_transactions)) }) },
@@ -191,6 +200,10 @@ fun TransactionsScreen(
             state = state,
             onConfirm = viewModel::confirmPending,
             onSkip = viewModel::skipPending,
+            onEdit = {
+                showPending = false
+                onEditPending(it.template.id)
+            },
             onDismiss = { showPending = false },
         )
     }
@@ -539,6 +552,7 @@ private fun PendingSheet(
     state: TransactionsUiState,
     onConfirm: (PendingOccurrence) -> Unit,
     onSkip: (PendingOccurrence) -> Unit,
+    onEdit: (PendingOccurrence) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -577,14 +591,12 @@ private fun PendingSheet(
                             ).filter { it.isNotBlank() }.joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onConfirm(item) }, enabled = actionable) {
-                                Text(stringResource(R.string.pending_confirm))
-                            }
-                            OutlinedButton(onClick = { onSkip(item) }, enabled = actionable) {
-                                Text(stringResource(R.string.pending_skip))
-                            }
-                        }
+                        PendingActions(
+                            enabled = actionable,
+                            onCancel = { onSkip(item) },
+                            onEdit = { onEdit(item) },
+                            onConfirm = { onConfirm(item) },
+                        )
                     }
                 }
             }

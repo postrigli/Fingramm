@@ -103,10 +103,16 @@ public data class RecurringTemplate(
     val categoryId: Long,
     val note: String = "",
     val accountType: AccountType? = null,
+    /** День месяца 1–31 для [RecurrenceFrequency.MONTHLY]; при еженедельном повторе не используется. */
     val dayOfMonth: Int,
     /** Ближайшая ещё не обработанная дата списания. */
     @Serializable(with = LocalDateIsoSerializer::class) val nextDueDate: LocalDate,
     val active: Boolean = true,
+    val frequency: RecurrenceFrequency = RecurrenceFrequency.MONTHLY,
+    /** Дни недели по ISO (1 — понедельник … 7 — воскресенье) для [RecurrenceFrequency.WEEKLY]. */
+    val weekdays: Set<Int> = emptySet(),
+    /** Время уведомления в минутах от полуночи (0–1439); null — без уведомления. */
+    val notifyAtMinute: Int? = null,
 )
 
 @Serializable
