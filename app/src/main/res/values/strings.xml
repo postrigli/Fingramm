@@ -320,7 +320,7 @@
     <string name="pending_title">Ожидают подтверждения</string>
     <string name="pending_hint">Регулярные операции, срок которых наступил. Подтвердите, чтобы добавить их в учёт, или пропустите.</string>
     <string name="pending_confirm">Подтвердить</string>
-    <string name="pending_skip">Пропустить</string>
+    <string name="pending_cancel">Отменить</string>
     <string name="pending_edit">Изменить</string>
 
     <!-- Регулярные операции -->

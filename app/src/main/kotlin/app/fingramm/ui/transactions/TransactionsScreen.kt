@@ -43,7 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -592,17 +591,12 @@ private fun PendingSheet(
                             ).filter { it.isNotBlank() }.joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { onConfirm(item) }, enabled = actionable) {
-                                Text(stringResource(R.string.pending_confirm))
-                            }
-                            OutlinedButton(onClick = { onEdit(item) }, enabled = actionable) {
-                                Text(stringResource(R.string.pending_edit))
-                            }
-                            TextButton(onClick = { onSkip(item) }, enabled = actionable) {
-                                Text(stringResource(R.string.pending_skip))
-                            }
-                        }
+                        PendingActions(
+                            enabled = actionable,
+                            onCancel = { onSkip(item) },
+                            onEdit = { onEdit(item) },
+                            onConfirm = { onConfirm(item) },
+                        )
                     }
                 }
             }
