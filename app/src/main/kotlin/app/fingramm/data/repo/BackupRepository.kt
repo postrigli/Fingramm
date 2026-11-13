@@ -30,10 +30,6 @@ class BackupRepository @Inject constructor(
         val profileDao = db.profileDao()
         return BackupData(
             profile = profileDao.getProfile()?.toDomain(),
-            survey = profileDao.getSurvey()?.toDomain(),
-            incomeSources = profileDao.getIncomeSources().map { it.toDomain() },
-            assets = profileDao.getAssets().map { it.toDomain() },
-            debts = profileDao.getDebts().map { it.toDomain() },
             categories = db.categoryDao().getAll().map { it.toDomain() },
             transactions = db.transactionDao().getAll().map { it.toDomain() },
             recurringTemplates = db.recurringDao().getAll().map { it.toDomain() },
@@ -71,17 +67,9 @@ class BackupRepository @Inject constructor(
         db.goalDao().clear()
         db.categoryDao().clear()
         val profileDao = db.profileDao()
-        profileDao.clearIncomeSources()
-        profileDao.clearAssets()
-        profileDao.clearDebts()
-        profileDao.clearSurvey()
         profileDao.clearProfile()
 
         data.profile?.let { profileDao.upsertProfile(it.toEntity()) }
-        data.survey?.let { profileDao.upsertSurvey(it.toEntity()) }
-        profileDao.insertIncomeSources(data.incomeSources.map { it.toEntity() })
-        profileDao.insertAssets(data.assets.map { it.toEntity() })
-        profileDao.insertDebts(data.debts.map { it.toEntity() })
         db.categoryDao().insertAll(data.categories.map { it.toEntity() })
         db.recurringDao().insertAll(data.recurringTemplates.map { it.toEntity() })
         db.transactionDao().insertAll(data.transactions.map { it.toEntity() })

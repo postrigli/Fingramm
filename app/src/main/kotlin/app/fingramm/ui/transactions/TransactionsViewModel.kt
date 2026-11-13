@@ -2,7 +2,6 @@ package app.fingramm.ui.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.fingramm.data.computePlan
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.RecurringRepository
@@ -64,8 +63,6 @@ data class MonthOverview(
     val month: YearMonth,
     val startDay: Int,
     val totals: MonthTotals,
-    val planIncomeMinor: Long,
-    val planExpensesMinor: Long,
     val limits: List<LimitRow>,
 )
 
@@ -133,24 +130,19 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private val overview: Flow<MonthOverview?> = combine(
-        budgetRepository.budget,
         statsRepository.monthCategoryTotals,
         combine(categoryRepository.categories, categoryRepository.limits, startDay) { c, l, d -> Triple(c, l, d) },
         overviewBack,
-    ) { budget, rows, (categories, limits, day), back ->
-        budget ?: return@combine null
+    ) { rows, (categories, limits, day), back ->
         val byId = categories.associateBy { it.id }
         val totals = StatsCalculator.monthTotals(rows, byId)
         val current = BudgetPeriod.containing(LocalDate.now(clock), day)
         val month = current.minusMonths(back.toLong())
         val selected = totals[month] ?: MonthTotals(month)
-        val plan = computePlan(budget, totals, current, day)
         MonthOverview(
             month = month,
             startDay = day,
             totals = selected,
-            planIncomeMinor = plan.cashFlow.incomeMinor,
-            planExpensesMinor = plan.cashFlow.outflowMinor,
             limits = limits.mapNotNull { limit ->
                 val category = byId[limit.categoryId] ?: return@mapNotNull null
                 val spent = selected.expenseByCategory[limit.categoryId] ?: 0L

@@ -19,6 +19,8 @@ import app.fingramm.R
 import app.fingramm.data.repo.SettingsRepository
 import app.fingramm.data.repo.TransactionRepository
 import app.fingramm.domain.model.ReminderMode
+import app.fingramm.domain.model.TransactionType
+import app.fingramm.widget.QuickAction
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.Clock
@@ -41,9 +43,12 @@ class ReminderWorker @AssistedInject constructor(
         val settings = settingsRepository.current().reminder
         if (settings.mode == ReminderMode.OFF) return Result.success()
 
-        val startOfToday = LocalDate.now(clock).atStartOfDay(clock.zone).toInstant().toEpochMilli()
+        val today = LocalDate.now(clock)
+        val startOfToday = today.atStartOfDay(clock.zone).toInstant().toEpochMilli()
         val alreadyLogged = transactions.countCreatedSince(startOfToday) > 0
-        if (!alreadyLogged && canNotify()) {
+        // «Ничего не тратил» отключает напоминание до конца этого дня.
+        val quiet = settingsRepository.current().quietDay == today.toEpochDay()
+        if (!alreadyLogged && !quiet && canNotify()) {
             val text = when (settings.mode) {
                 ReminderMode.WEEKLY -> R.string.notification_text_weekly
                 else -> R.string.notification_text_daily
@@ -73,12 +78,28 @@ class ReminderWorker @AssistedInject constructor(
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        val addExpense = PendingIntent.getActivity(
+            context,
+            REQUEST_ADD_EXPENSE,
+            QuickAction.launchIntent(context, QuickAction.AddTransaction(TransactionType.EXPENSE), NOTIFICATION_ID),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val nothingSpent = PendingIntent.getBroadcast(
+            context,
+            REQUEST_NOTHING_SPENT,
+            Intent(context, QuietDayReceiver::class.java)
+                .setAction(QuietDayReceiver.ACTION_NOTHING_SPENT)
+                .putExtra(QuietDayReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_title))
             .setContentText(context.getString(textRes))
             .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(textRes)))
             .setContentIntent(open)
+            .addAction(0, context.getString(R.string.reminder_action_add_expense), addExpense)
+            .addAction(0, context.getString(R.string.reminder_action_nothing_spent), nothingSpent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
@@ -88,6 +109,8 @@ class ReminderWorker @AssistedInject constructor(
     companion object {
         const val CHANNEL_ID = "reminders"
         private const val NOTIFICATION_ID = 1001
+        private const val REQUEST_ADD_EXPENSE = 1002
+        private const val REQUEST_NOTHING_SPENT = 1003
 
         /** Канал «Напоминания» (Android 8+). Безопасно вызывать повторно. */
         fun ensureChannel(context: Context) {

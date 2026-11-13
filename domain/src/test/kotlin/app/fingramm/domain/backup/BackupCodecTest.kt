@@ -77,18 +77,16 @@ class BackupCodecTest {
     }
 
     @Test
-    fun `validator catches duplicates negatives and mismatched profile`() {
+    fun `validator catches duplicates and wrong amounts`() {
         val data = TestData.backup()
         val issues = BackupValidator.validate(
             data.copy(
-                survey = null,
                 categories = data.categories + data.categories.first(),
                 transactions = data.transactions.map { it.copy(amountMinor = 0) },
                 goals = data.goals.map { it.copy(savedMinor = -1) },
                 reminder = data.reminder.copy(hour = 25),
             ),
         )
-        assertTrue(issues.any { it.contains("profile") })
         assertTrue(issues.any { it.contains("categories") })
         assertTrue(issues.any { it.contains("сумма должна быть") })
         assertTrue(issues.any { it.contains("накоплено") })

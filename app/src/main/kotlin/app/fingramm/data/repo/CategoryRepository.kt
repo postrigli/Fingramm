@@ -37,4 +37,15 @@ class CategoryRepository @Inject constructor(private val db: AppDatabase) {
         }
         id
     }
+
+    /**
+     * Добавляет категории, которых ещё нет (сравнение по типу и названию без учёта регистра): так обновление
+     * приложения не создаёт дублей с категориями, которые пользователь завёл сам. Возвращает число добавленных.
+     */
+    suspend fun addMissing(candidates: List<Category>): Int = db.withTransaction {
+        val existing = dao.getAll().map { it.type to it.name.lowercase() }.toMutableSet()
+        val fresh = candidates.filter { existing.add(it.type to it.name.lowercase()) }
+        dao.insertAll(fresh.map { it.toEntity() })
+        fresh.size
+    }
 }

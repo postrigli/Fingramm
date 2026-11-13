@@ -64,6 +64,11 @@
             android:name=".notifications.RecurringNotificationReceiver"
             android:exported="false" />
 
+        <!-- Кнопка «Ничего не тратил» в вечернем напоминании. Снаружи недоступна. -->
+        <receiver
+            android:name=".notifications.QuietDayReceiver"
+            android:exported="false" />
+
         <!-- WorkManager инициализируется вручную в FingrammApp (нужна HiltWorkerFactory). -->
         <provider
             android:name="androidx.startup.InitializationProvider"

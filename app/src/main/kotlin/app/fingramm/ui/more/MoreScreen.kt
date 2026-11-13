@@ -31,7 +31,7 @@ import app.fingramm.ui.common.SectionTitle
 
 @Composable
 fun MoreScreen(
-    onOpenSurvey: () -> Unit,
+    onOpenReport: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenRecurring: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -39,7 +39,7 @@ fun MoreScreen(
     onOpenAbout: () -> Unit,
 ) {
     val items = listOf(
-        Triple(R.string.more_survey, R.string.more_survey_hint, onOpenSurvey),
+        Triple(R.string.more_report, R.string.more_report_hint, onOpenReport),
         Triple(R.string.more_categories, R.string.more_categories_hint, onOpenCategories),
         Triple(R.string.more_recurring, R.string.more_recurring_hint, onOpenRecurring),
         Triple(R.string.more_settings, R.string.more_settings_hint, onOpenSettings),

@@ -14,3 +14,16 @@ val MIGRATION_1_2: Migration = object : Migration(1, 2) {
         db.execSQL("ALTER TABLE recurring_template ADD COLUMN notifyAtMinute INTEGER")
     }
 }
+
+/**
+ * 2 → 3: из приложения убран опрос и плановые расчёты, поэтому его таблицы (ответы опроса, источники дохода,
+ * активы, долги) больше не нужны. Профиль с основной валютой, операции, категории и цели остаются нетронутыми.
+ */
+val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS survey_answers")
+        db.execSQL("DROP TABLE IF EXISTS income_source")
+        db.execSQL("DROP TABLE IF EXISTS asset")
+        db.execSQL("DROP TABLE IF EXISTS debt")
+    }
+}

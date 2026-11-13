@@ -1,6 +1,7 @@
 package app.fingramm.ui.navigation
 
 import app.fingramm.domain.model.TransactionType
+import java.time.YearMonth
 
 /** Маршруты навигации. Параметры редактирования — необязательные query-аргументы (id < 0 — новая запись). */
 object Routes {
@@ -16,8 +17,8 @@ object Routes {
     const val CATEGORY_EDIT = "category/edit?id={id}&type={type}"
     const val RECURRING = "recurring"
     const val RECURRING_EDIT = "recurring/edit?id={id}"
-    const val SURVEY = "survey"
-    const val SURVEY_STEP = "survey/{step}"
+    const val CATEGORY_STATS = "category-stats/{id}?period={period}"
+    const val REPORT = "report?period={period}"
     const val SETTINGS = "settings"
     const val BACKUP = "backup"
     const val ABOUT = "about"
@@ -39,7 +40,14 @@ object Routes {
 
     fun recurringEdit(id: Long? = null) = "recurring/edit?id=${id ?: NEW}"
 
-    fun surveyStep(step: String) = "survey/$step"
+    /** Сводка по категории за расчётный месяц [period]. */
+    fun categoryStats(
+        id: Long,
+        period: YearMonth,
+    ) = "category-stats/$id?period=$period"
+
+    /** Отчёт месяца; без [period] открывается последний завершившийся период. */
+    fun report(period: YearMonth? = null) = "report" + (period?.let { "?period=$it" } ?: "")
 
     const val NEW = -1L
 }

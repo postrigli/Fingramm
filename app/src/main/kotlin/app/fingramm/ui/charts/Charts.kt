@@ -2,12 +2,14 @@ package app.fingramm.ui.charts
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +26,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,8 +34,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.fingramm.domain.money.Money
 
-/** Сегмент кольцевой диаграммы. [value] — в минимальных единицах валюты. */
-data class ChartSegment(val label: String, val value: Long, val color: Color)
+/**
+ * Сегмент кольцевой диаграммы. [value] — в минимальных единицах валюты. Если задан [onClick], строка легенды
+ * нажимается (например, чтобы посмотреть операции этой категории).
+ */
+data class ChartSegment(val label: String, val value: Long, val color: Color, val onClick: (() -> Unit)? = null)
 
 /**
  * Кольцевая диаграмма, нарисованная на Canvas (без внешних библиотек графиков — см. DECISIONS.md).
@@ -97,6 +103,7 @@ fun DonutChart(
                     label = segment.label,
                     value = formatValue(segment.value),
                     percent = Money.formatPercent(segment.value.toDouble() / total),
+                    onClick = segment.onClick,
                 )
             }
         }
@@ -104,8 +111,13 @@ fun DonutChart(
 }
 
 @Composable
-private fun LegendRow(color: Color, label: String, value: String, percent: String) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun LegendRow(color: Color, label: String, value: String, percent: String, onClick: (() -> Unit)? = null) {
+    val clickable = if (onClick != null) {
+        Modifier.clickable(role = Role.Button, onClick = onClick).heightIn(min = 40.dp)
+    } else {
+        Modifier
+    }
+    Row(Modifier.fillMaxWidth().then(clickable), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(12.dp).background(color, CircleShape))
         Text(label, Modifier.padding(start = 8.dp).weight(1f), style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium)

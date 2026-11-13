@@ -55,55 +55,40 @@ class StatsCalculatorTest {
     }
 
     @Test
-    fun `cumulative balance includes only months up to the selected one`() {
+    fun `average flow takes full months with data only`() {
         val totals = StatsCalculator.monthTotals(
             listOf(
                 row(aug, 4, TransactionType.INCOME, 100),
-                row(sep, 1, TransactionType.EXPENSE, 30),
-                row(oct, 4, TransactionType.INCOME, 1_000),
-            ),
-            categories,
-        )
-        assertEquals(70, StatsCalculator.cumulativeBalanceUpTo(totals, sep))
-        assertEquals(1_070, StatsCalculator.cumulativeBalanceUpTo(totals, oct))
-        assertEquals(0, StatsCalculator.cumulativeBalanceUpTo(totals, YearMonth.of(2026, 1)))
-    }
-
-    @Test
-    fun `variable estimate averages full months after profile creation`() {
-        val totals = StatsCalculator.monthTotals(
-            listOf(
-                // Месяц создания профиля — неполный, не учитывается.
-                row(jul, 2, TransactionType.EXPENSE, 99_999),
-                row(aug, 2, TransactionType.EXPENSE, 10_000),
-                row(sep, 2, TransactionType.EXPENSE, 20_000),
+                row(aug, 1, TransactionType.EXPENSE, 40),
+                row(sep, 4, TransactionType.INCOME, 200),
+                row(sep, 1, TransactionType.EXPENSE, 80),
                 // Текущий месяц ещё не завершён.
-                row(oct, 2, TransactionType.EXPENSE, 77_777),
+                row(oct, 1, TransactionType.EXPENSE, 77_777),
             ),
             categories,
         )
-        assertEquals(15_000L, StatsCalculator.estimateVariableFromFacts(totals, jul, oct))
+        assertEquals(90L, StatsCalculator.averageMonthlyFlow(totals, oct)) // (60 + 120) / 2
     }
 
     @Test
-    fun `variable estimate is null until a full month has passed`() {
-        val totals = StatsCalculator.monthTotals(listOf(row(oct, 2, TransactionType.EXPENSE, 5_000)), categories)
-        assertNull(StatsCalculator.estimateVariableFromFacts(totals, oct, oct))
-        assertNull(StatsCalculator.estimateVariableFromFacts(emptyMap(), jul, oct))
+    fun `average flow is null until a full month has passed`() {
+        val totals = StatsCalculator.monthTotals(listOf(row(oct, 1, TransactionType.EXPENSE, 5_000)), categories)
+        assertNull(StatsCalculator.averageMonthlyFlow(totals, oct))
+        assertNull(StatsCalculator.averageMonthlyFlow(emptyMap(), oct))
     }
 
     @Test
-    fun `variable estimate uses at most the last three months`() {
+    fun `average flow uses at most the last three months`() {
         val totals = StatsCalculator.monthTotals(
             listOf(
-                row(YearMonth.of(2026, 1), 2, TransactionType.EXPENSE, 1_000_000),
-                row(YearMonth.of(2026, 6), 2, TransactionType.EXPENSE, 30),
-                row(jul, 2, TransactionType.EXPENSE, 60),
-                row(aug, 2, TransactionType.EXPENSE, 90),
+                row(YearMonth.of(2026, 1), 4, TransactionType.INCOME, 1_000_000),
+                row(YearMonth.of(2026, 6), 4, TransactionType.INCOME, 30),
+                row(jul, 4, TransactionType.INCOME, 60),
+                row(aug, 4, TransactionType.INCOME, 90),
             ),
             categories,
         )
-        assertEquals(60L, StatsCalculator.estimateVariableFromFacts(totals, YearMonth.of(2025, 12), sep))
+        assertEquals(60L, StatsCalculator.averageMonthlyFlow(totals, sep))
     }
 
     @Test

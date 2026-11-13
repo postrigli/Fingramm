@@ -3,7 +3,6 @@ package app.fingramm.ui.goals
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.fingramm.data.computePlan
 import app.fingramm.data.repo.BudgetRepository
 import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.GoalRepository
@@ -56,21 +55,18 @@ class GoalsViewModel @Inject constructor(
 ) : ViewModel() {
     val state: StateFlow<GoalsUiState> = combine(
         repository.goals,
-        budgetRepository.budget,
+        budgetRepository.profile,
         statsRepository.monthCategoryTotals,
         categoryRepository.categories,
         settings.monthStartDay,
-    ) { goals, budget, rows, categories, startDay ->
+    ) { goals, profile, rows, categories, startDay ->
         val today = LocalDate.now(clock)
-        val flow = budget?.let {
-            val totals = StatsCalculator.monthTotals(rows, categories.associateBy { c -> c.id })
-            val current = BudgetPeriod.containing(today, startDay)
-            computePlan(it, totals, current, startDay).cashFlow.freeCashFlowMinor
-        } ?: 0L
+        val totals = StatsCalculator.monthTotals(rows, categories.associateBy { c -> c.id })
+        val flow = StatsCalculator.averageMonthlyFlow(totals, BudgetPeriod.containing(today, startDay)) ?: 0L
         val items = goals.map { GoalItem(it, GoalForecasts.forecast(it, flow, today)) }
         GoalsUiState(
             loading = false,
-            currency = budget?.profile?.currency ?: CurrencyCode.RUB,
+            currency = profile?.currency ?: CurrencyCode.RUB,
             monthlyFlowMinor = flow,
             year = items.filter { it.goal.horizon == GoalHorizon.YEAR },
             mid = items.filter { it.goal.horizon == GoalHorizon.MID },

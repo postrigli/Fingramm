@@ -52,7 +52,6 @@ import app.fingramm.ui.common.formatTime
 import app.fingramm.ui.common.notificationsAllowed
 import app.fingramm.ui.common.rememberNotificationPermissionRequest
 import app.fingramm.ui.common.weekdayName
-import app.fingramm.ui.survey.reminderModeLabel
 import java.time.LocalDate
 
 @Composable
@@ -231,7 +230,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
 
 /** Выбор дня начала месяца: список 1–28, выбор сразу применяется. «1» — календарный месяц. */
 @Composable
-private fun MonthStartDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
+internal fun MonthStartDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_month_dialog_title)) },

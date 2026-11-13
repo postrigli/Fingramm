@@ -12,6 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.YearMonth
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -24,6 +25,7 @@ class QuickActionTest {
         QuickAction.OpenDashboard,
         QuickAction.OpenPending,
         QuickAction.EditPending(7),
+        QuickAction.OpenReport(YearMonth.of(2026, 9)),
     )
 
     @Test
@@ -77,5 +79,15 @@ class QuickActionTest {
         val fromNotification = QuickAction.launchIntent(context, QuickAction.OpenPending, notificationId = 2005)
         assertEquals(2005, QuickAction.notificationIdFrom(fromNotification))
         assertEquals(QuickAction.OpenPending, QuickAction.fromIntent(fromNotification))
+    }
+
+    @Test
+    fun `report period survives the launch intent and a broken one is ignored`() {
+        val period = YearMonth.of(2026, 9)
+        val intent = QuickAction.launchIntent(context, QuickAction.OpenReport(period))
+        assertEquals(QuickAction.OpenReport(period), QuickAction.fromIntent(intent))
+        assertNull(QuickAction.fromIntent(Intent(QuickAction.ACTION_OPEN_REPORT)))
+        val broken = Intent(QuickAction.ACTION_OPEN_REPORT).putExtra(QuickAction.EXTRA_PERIOD, "не месяц")
+        assertNull(QuickAction.fromIntent(broken))
     }
 }

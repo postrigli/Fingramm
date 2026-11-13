@@ -20,54 +20,6 @@ interface ProfileDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertProfile(profile: BudgetProfileEntity)
 
-    @Query("SELECT * FROM survey_answers WHERE id = $SINGLETON_ID")
-    fun observeSurvey(): Flow<SurveyAnswersEntity?>
-
-    @Query("SELECT * FROM survey_answers WHERE id = $SINGLETON_ID")
-    suspend fun getSurvey(): SurveyAnswersEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSurvey(survey: SurveyAnswersEntity)
-
-    @Query("SELECT * FROM income_source ORDER BY id")
-    fun observeIncomeSources(): Flow<List<IncomeSourceEntity>>
-
-    @Query("SELECT * FROM income_source ORDER BY id")
-    suspend fun getIncomeSources(): List<IncomeSourceEntity>
-
-    @Insert
-    suspend fun insertIncomeSources(items: List<IncomeSourceEntity>)
-
-    @Query("DELETE FROM income_source")
-    suspend fun clearIncomeSources()
-
-    @Query("SELECT * FROM asset ORDER BY id")
-    fun observeAssets(): Flow<List<AssetEntity>>
-
-    @Query("SELECT * FROM asset ORDER BY id")
-    suspend fun getAssets(): List<AssetEntity>
-
-    @Insert
-    suspend fun insertAssets(items: List<AssetEntity>)
-
-    @Query("DELETE FROM asset")
-    suspend fun clearAssets()
-
-    @Query("SELECT * FROM debt ORDER BY id")
-    fun observeDebts(): Flow<List<DebtEntity>>
-
-    @Query("SELECT * FROM debt ORDER BY id")
-    suspend fun getDebts(): List<DebtEntity>
-
-    @Insert
-    suspend fun insertDebts(items: List<DebtEntity>)
-
-    @Query("DELETE FROM debt")
-    suspend fun clearDebts()
-
-    @Query("DELETE FROM survey_answers")
-    suspend fun clearSurvey()
-
     @Query("DELETE FROM budget_profile")
     suspend fun clearProfile()
 }

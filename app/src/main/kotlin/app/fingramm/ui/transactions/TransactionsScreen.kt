@@ -249,15 +249,6 @@ private fun OverviewCard(state: TransactionsUiState, overview: MonthOverview, vi
                 if (balance >= 0) colors.income else colors.expense,
                 bold = true,
             )
-            Text(
-                stringResource(
-                    R.string.overview_vs_plan,
-                    money(overview.planIncomeMinor),
-                    money(overview.planExpensesMinor),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             if (overview.limits.isNotEmpty()) {
                 SectionTitle(stringResource(R.string.overview_limits))
                 overview.limits.forEach { row -> LimitLine(row, money) }

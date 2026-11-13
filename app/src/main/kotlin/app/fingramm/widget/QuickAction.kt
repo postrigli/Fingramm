@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import app.fingramm.MainActivity
 import app.fingramm.domain.model.TransactionType
+import java.time.YearMonth
 
 /**
  * Быстрое действие, которое виджет или уведомление передаёт приложению через Intent.action.
@@ -33,6 +34,11 @@ sealed interface QuickAction {
         override val intentAction: String = QuickAction.ACTION_EDIT_PENDING
     }
 
+    /** Открыть отчёт за расчётный месяц [period] (нажатие на уведомление «Отчёт за месяц готов»). */
+    data class OpenReport(val period: YearMonth) : QuickAction {
+        override val intentAction: String = QuickAction.ACTION_OPEN_REPORT
+    }
+
     /** Открыть сводку (нажатие на показатели месяца). */
     data object OpenDashboard : QuickAction {
         override val intentAction: String = QuickAction.ACTION_OPEN_DASHBOARD
@@ -44,6 +50,8 @@ sealed interface QuickAction {
         const val ACTION_OPEN_DASHBOARD = "app.fingramm.action.OPEN_DASHBOARD"
         const val ACTION_OPEN_PENDING = "app.fingramm.action.OPEN_PENDING"
         const val ACTION_EDIT_PENDING = "app.fingramm.action.EDIT_PENDING"
+        const val ACTION_OPEN_REPORT = "app.fingramm.action.OPEN_REPORT"
+        const val EXTRA_PERIOD = "app.fingramm.extra.PERIOD"
         const val EXTRA_TEMPLATE_ID = "app.fingramm.extra.TEMPLATE_ID"
         const val EXTRA_NOTIFICATION_ID = "app.fingramm.extra.NOTIFICATION_ID"
 
@@ -61,6 +69,9 @@ sealed interface QuickAction {
             ACTION_OPEN_PENDING -> OpenPending
             ACTION_EDIT_PENDING ->
                 intent?.getLongExtra(EXTRA_TEMPLATE_ID, NO_ID)?.takeIf { it > 0 }?.let(::EditPending)
+            ACTION_OPEN_REPORT -> intent?.getStringExtra(EXTRA_PERIOD)
+                ?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+                ?.let(::OpenReport)
             else -> null
         }
 
@@ -78,6 +89,7 @@ sealed interface QuickAction {
                 .addFlags(LAUNCH_FLAGS)
                 .also { intent ->
                     if (action is EditPending) intent.putExtra(EXTRA_TEMPLATE_ID, action.templateId)
+                    if (action is OpenReport) intent.putExtra(EXTRA_PERIOD, action.period.toString())
                     if (notificationId != null) intent.putExtra(EXTRA_NOTIFICATION_ID, notificationId)
                 }
     }

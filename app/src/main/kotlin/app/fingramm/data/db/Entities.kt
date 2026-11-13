@@ -6,15 +6,10 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import app.fingramm.domain.model.AccountType
-import app.fingramm.domain.model.BookkeepingExperience
 import app.fingramm.domain.model.CategoryKind
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.GoalHorizon
-import app.fingramm.domain.model.InputMode
-import app.fingramm.domain.model.NamedAmount
 import app.fingramm.domain.model.RecurrenceFrequency
-import app.fingramm.domain.model.SavingsEntry
-import app.fingramm.domain.model.TimeCommitment
 import app.fingramm.domain.model.TransactionType
 import java.time.LocalDate
 
@@ -29,46 +24,6 @@ data class BudgetProfileEntity(
     val childrenCount: Int,
     val currency: CurrencyCode,
     val createdAt: LocalDate,
-)
-
-@Entity(tableName = "survey_answers")
-data class SurveyAnswersEntity(
-    @PrimaryKey val id: Long = SINGLETON_ID,
-    val mandatoryMode: InputMode,
-    val mandatoryTotalMinor: Long,
-    val mandatoryItems: List<NamedAmount>,
-    val variableMode: InputMode,
-    val variableTotalMinor: Long,
-    val variableItems: List<NamedAmount>,
-    val variableUnknown: Boolean,
-    val hasCushion: Boolean,
-    val cushionMinor: Long,
-    val savings: List<SavingsEntry>,
-    val includeAssetsInCapital: Boolean,
-    val experience: BookkeepingExperience?,
-    val timeCommitment: TimeCommitment?,
-)
-
-@Entity(tableName = "income_source")
-data class IncomeSourceEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val amountMinor: Long,
-)
-
-@Entity(tableName = "asset")
-data class AssetEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val valueMinor: Long,
-)
-
-@Entity(tableName = "debt")
-data class DebtEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    val monthlyPaymentMinor: Long,
-    val balanceMinor: Long?,
 )
 
 @Entity(tableName = "category")

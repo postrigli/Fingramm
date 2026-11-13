@@ -22,8 +22,10 @@ import app.fingramm.domain.backup.CsvLabels
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
+import app.fingramm.notifications.MonthReportScheduler
 import app.fingramm.notifications.RecurringReminderScheduler
 import app.fingramm.notifications.ReminderScheduler
+import app.fingramm.notifications.ScheduleSync
 import app.fingramm.security.ExternalFlowGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -51,6 +53,7 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val scheduler: ReminderScheduler,
     private val recurringReminders: RecurringReminderScheduler,
+    private val monthReports: MonthReportScheduler,
     private val backup: BackupRepository,
 ) : ViewModel() {
     val state: StateFlow<AppSettings> =
@@ -68,7 +71,11 @@ class SettingsViewModel @Inject constructor(
 
     /** День начала расчётного месяца 1–28. Данные не меняются: итоги пересчитываются по новым границам. */
     fun setMonthStartDay(day: Int) {
-        viewModelScope.launch { settings.setMonthStartDay(day) }
+        viewModelScope.launch {
+            settings.setMonthStartDay(day)
+            // Отчёт приходит в первый день расчётного месяца, поэтому расписание зависит от дня начала.
+            monthReports.schedule()
+        }
     }
 
     /** Полное удаление данных. После него приложение вернётся к онбордингу. */
@@ -77,6 +84,7 @@ class SettingsViewModel @Inject constructor(
             backup.wipe()
             scheduler.apply(ReminderSettings())
             recurringReminders.syncAll()
+            monthReports.cancel()
         }
     }
 
@@ -125,9 +133,7 @@ class BackupViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val backup: BackupRepository,
     private val budgetRepository: BudgetRepository,
-    private val scheduler: ReminderScheduler,
-    private val recurringReminders: RecurringReminderScheduler,
-    private val settings: SettingsRepository,
+    private val scheduleSync: ScheduleSync,
     private val externalFlow: ExternalFlowGuard,
     private val clock: Clock,
 ) : ViewModel() {
@@ -234,8 +240,7 @@ class BackupViewModel @Inject constructor(
         _state.update { it.copy(preview = null, busy = true) }
         viewModelScope.launch {
             backup.importData(preview.data, mode)
-            scheduler.apply(settings.current().reminder)
-            recurringReminders.syncAll()
+            scheduleSync.afterImport()
             _state.update { it.copy(busy = false) }
             _messages.send(BackupMessage.ImportOk)
         }

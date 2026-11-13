@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.fingramm.data.db.AppDatabase
 import app.fingramm.data.db.MIGRATION_1_2
+import app.fingramm.data.db.MIGRATION_2_3
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -63,6 +64,43 @@ class MigrationTest {
             assertEquals(1, cursor.getInt(5))
             assertEquals(3_000_000L, cursor.getLong(6))
         }
+        db.close()
+    }
+
+    @Test
+    fun migration2To3DropsSurveyTablesAndKeepsEverythingElse() {
+        helper.createDatabase(DB_NAME, 2).apply {
+            execSQL(
+                "INSERT INTO budget_profile (id, familySize, hasChildren, childrenCount, currency, createdAt) " +
+                    "VALUES (1, 3, 1, 1, 'EUR', '2026-09-01')",
+            )
+            execSQL("INSERT INTO income_source (id, name, amountMinor) VALUES (1, 'Зарплата', 10000000)")
+            execSQL("INSERT INTO asset (id, name, valueMinor) VALUES (1, 'Авто', 50000000)")
+            execSQL(
+                "INSERT INTO category (id, name, type, kind, icon, archived, isDebtPayment) " +
+                    "VALUES (1, 'Продукты', 'EXPENSE', 'MANDATORY', 'C', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO transaction_entry (id, type, amountMinor, categoryId, date, note, noteLower, " +
+                    "accountType, memberId, recurringId, createdAt) " +
+                    "VALUES (5, 'EXPENSE', 12300, 1, '2026-10-05', 'Хлеб', 'хлеб', NULL, NULL, NULL, 1)",
+            )
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, MIGRATION_2_3)
+        db.query("SELECT currency FROM budget_profile WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("EUR", cursor.getString(0))
+        }
+        db.query("SELECT amountMinor, note FROM transaction_entry WHERE id = 5").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(12_300L, cursor.getLong(0))
+            assertEquals("Хлеб", cursor.getString(1))
+        }
+        db.query(
+            "SELECT name FROM sqlite_master WHERE type = 'table' " +
+                "AND name IN ('survey_answers', 'income_source', 'asset', 'debt')",
+        ).use { cursor -> assertEquals(0, cursor.count) }
         db.close()
     }
 

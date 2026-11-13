@@ -1,15 +1,11 @@
 package app.fingramm.domain.backup
 
-import app.fingramm.domain.model.Asset
 import app.fingramm.domain.model.BudgetProfile
 import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CategoryLimit
-import app.fingramm.domain.model.Debt
 import app.fingramm.domain.model.Goal
-import app.fingramm.domain.model.IncomeSource
 import app.fingramm.domain.model.RecurringTemplate
 import app.fingramm.domain.model.ReminderSettings
-import app.fingramm.domain.model.SurveyAnswers
 import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.period.BudgetPeriod
 import kotlinx.serialization.KSerializer
@@ -25,14 +21,13 @@ import java.time.LocalDate
 public const val BACKUP_SCHEMA_VERSION: Int = 1
 public const val BACKUP_APP_ID: String = "fingramm"
 
-/** Полный снимок данных приложения — содержимое всех таблиц, настройки напоминаний и начала месяца. */
+/**
+ * Полный снимок данных приложения — содержимое всех таблиц, настройки напоминаний и начала месяца.
+ * Файлы старых версий с ответами опроса (план, активы, долги) читаются: неизвестные поля пропускаются.
+ */
 @Serializable
 public data class BackupData(
     val profile: BudgetProfile? = null,
-    val survey: SurveyAnswers? = null,
-    val incomeSources: List<IncomeSource> = emptyList(),
-    val assets: List<Asset> = emptyList(),
-    val debts: List<Debt> = emptyList(),
     val categories: List<Category> = emptyList(),
     val transactions: List<Transaction> = emptyList(),
     val recurringTemplates: List<RecurringTemplate> = emptyList(),

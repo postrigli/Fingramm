@@ -3,6 +3,7 @@ package app.fingramm.ui.navigation
 import app.fingramm.domain.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.YearMonth
 
 class RoutesTest {
     @Test
@@ -24,5 +25,12 @@ class RoutesTest {
     @Test
     fun `editing a pending occurrence carries the template id`() {
         assertEquals("transaction/edit?id=-1&template=9", Routes.transactionEdit(template = 9))
+    }
+
+    @Test
+    fun `category stats and report routes carry the period`() {
+        assertEquals("category-stats/12?period=2026-09", Routes.categoryStats(12, YearMonth.of(2026, 9)))
+        assertEquals("report?period=2026-09", Routes.report(YearMonth.of(2026, 9)))
+        assertEquals("report", Routes.report())
     }
 }

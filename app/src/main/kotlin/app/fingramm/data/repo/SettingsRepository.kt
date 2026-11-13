@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
@@ -13,8 +14,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
+
+const val NO_QUIET_DAY: Long = -1L
 
 /** Настройки приложения, не относящиеся к бюджету (DataStore). */
 data class AppSettings(
@@ -23,6 +27,10 @@ data class AppSettings(
     val lockEnabled: Boolean = false,
     /** День начала расчётного месяца 1–28; 1 — календарный месяц. Спрашивать при первом запуске не нужно. */
     val monthStartDay: Int = BudgetPeriod.DEFAULT_START_DAY,
+    /** Версия набора предустановленных категорий, уже добавленных в приложение. */
+    val presetsVersion: Int = 1,
+    /** День (epoch day), когда пользователь нажал «Ничего не тратил»: вечернее напоминание в этот день не приходит. */
+    val quietDay: Long = NO_QUIET_DAY,
 )
 
 @Singleton
@@ -39,6 +47,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             disclaimerShown = prefs[DISCLAIMER_SHOWN] ?: false,
             lockEnabled = prefs[LOCK_ENABLED] ?: false,
             monthStartDay = BudgetPeriod.normalize(prefs[MONTH_START_DAY] ?: BudgetPeriod.DEFAULT_START_DAY),
+            presetsVersion = prefs[PRESETS_VERSION] ?: 1,
+            quietDay = prefs[QUIET_DAY] ?: NO_QUIET_DAY,
         )
     }
 
@@ -68,6 +78,15 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         dataStore.edit { it[MONTH_START_DAY] = BudgetPeriod.normalize(day) }
     }
 
+    suspend fun setPresetsVersion(version: Int) {
+        dataStore.edit { it[PRESETS_VERSION] = version }
+    }
+
+    /** Пользователь сообщил, что сегодня трат не было: до конца этого дня вечернее напоминание молчит. */
+    suspend fun setQuietDay(day: LocalDate) {
+        dataStore.edit { it[QUIET_DAY] = day.toEpochDay() }
+    }
+
     /** Полный сброс настроек (после «Удалить все данные»). */
     suspend fun clear() {
         dataStore.edit { it.clear() }
@@ -81,5 +100,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         val DISCLAIMER_SHOWN = booleanPreferencesKey("disclaimer_shown")
         val LOCK_ENABLED = booleanPreferencesKey("lock_enabled")
         val MONTH_START_DAY = intPreferencesKey("month_start_day")
+        val PRESETS_VERSION = intPreferencesKey("presets_version")
+        val QUIET_DAY = longPreferencesKey("quiet_day")
     }
 }

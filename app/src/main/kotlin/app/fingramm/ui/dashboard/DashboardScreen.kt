@@ -6,117 +6,88 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.fingramm.R
-import app.fingramm.domain.metrics.MetricId
-import app.fingramm.domain.metrics.MetricResult
-import app.fingramm.domain.metrics.MetricStatus
-import app.fingramm.domain.metrics.VariableSource
 import app.fingramm.domain.money.Money
+import app.fingramm.domain.stats.MonthTotals
 import app.fingramm.ui.charts.ChartSegment
 import app.fingramm.ui.charts.DonutChart
 import app.fingramm.ui.charts.IncomeExpenseBarChart
 import app.fingramm.ui.charts.MonthBar
-import app.fingramm.ui.common.HelpButton
 import app.fingramm.ui.common.InfoCard
 import app.fingramm.ui.common.LoadingBox
+import app.fingramm.ui.common.PeriodSwitcher
 import app.fingramm.ui.common.ScreenColumn
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.formatDate
-import app.fingramm.ui.common.formatDecimal
 import app.fingramm.ui.common.formatMonthShort
 import app.fingramm.ui.common.formatPeriod
 import app.fingramm.ui.theme.ChartPalette
 import app.fingramm.ui.theme.LocalStatusColors
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
-fun DashboardScreen(onOpenGoals: () -> Unit, viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardScreen(
+    onOpenGoals: () -> Unit,
+    onOpenCategory: (categoryId: Long, month: YearMonth) -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var helpFor by remember { mutableStateOf<MetricId?>(null) }
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.dashboard_title)) }) },
     ) { padding ->
-        if (state.loading || state.report == null) {
+        if (state.loading) {
             LoadingBox(Modifier.padding(padding))
             return@Scaffold
         }
-        val report = checkNotNull(state.report)
         val money = { minor: Long -> Money.format(minor, state.currency) }
         ScreenColumn(Modifier.padding(padding)) {
-            ModeSwitch(state.mode, viewModel::setMode)
-            if (state.mode == DashboardMode.FACT) {
-                MonthSwitcher(
-                    label = formatPeriod(state.month, state.startDay),
-                    canGoNext = state.canGoNext,
-                    onPrevious = viewModel::previousMonth,
-                    onNext = viewModel::nextMonth,
-                )
-                if (!state.factHasData) {
-                    InfoCard {
-                        Text(
-                            stringResource(R.string.dashboard_fact_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                } else if (state.month == state.currentMonth) {
+            PeriodSwitcher(
+                label = formatPeriod(state.month, state.startDay),
+                canGoNext = state.canGoNext,
+                onPrevious = viewModel::previousMonth,
+                onNext = viewModel::nextMonth,
+            )
+            if (!state.totals.hasData) {
+                InfoCard {
+                    Text(stringResource(R.string.dashboard_fact_empty), style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                TotalsCard(state.totals, money)
+                if (state.month == state.currentMonth) {
                     Text(
                         stringResource(R.string.dashboard_fact_partial),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else {
-                PlanNotices(state.variableSource, state.debtBalanceMissing)
             }
 
-            report.results.forEach { result ->
-                MetricCard(result = result, money = money, onHelp = { helpFor = result.id })
-            }
-
-            StructureSection(state, money)
+            StructureSection(state, money, onOpenCategory)
             BarsSection(state, money)
             GoalsSection(state, money, onOpenGoals)
 
@@ -128,7 +99,6 @@ fun DashboardScreen(onOpenGoals: () -> Unit, viewModel: DashboardViewModel = hil
         }
     }
 
-    helpFor?.let { id -> MetricHelpSheet(id = id, onDismiss = { helpFor = null }) }
     if (state.showDisclaimer && !state.loading) {
         AlertDialog(
             onDismissRequest = viewModel::dismissDisclaimer,
@@ -143,130 +113,52 @@ fun DashboardScreen(onOpenGoals: () -> Unit, viewModel: DashboardViewModel = hil
     }
 }
 
+/** Доходы, расходы и остаток выбранного месяца. */
 @Composable
-private fun ModeSwitch(mode: DashboardMode, onChange: (DashboardMode) -> Unit) {
-    val options = listOf(DashboardMode.PLAN to R.string.mode_plan, DashboardMode.FACT to R.string.mode_fact)
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        options.forEachIndexed { index, (value, label) ->
-            SegmentedButton(
-                selected = mode == value,
-                onClick = { onChange(value) },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                label = { Text(stringResource(label)) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun MonthSwitcher(label: String, canGoNext: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        IconButton(onClick = onPrevious) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = stringResource(R.string.month_previous),
-            )
-        }
-        Text(label, style = MaterialTheme.typography.titleMedium)
-        IconButton(onClick = onNext, enabled = canGoNext) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.month_next))
-        }
-    }
-}
-
-@Composable
-private fun PlanNotices(variableSource: VariableSource, debtBalanceMissing: Boolean) {
-    when (variableSource) {
-        VariableSource.UNKNOWN -> InfoCard {
-            Text(stringResource(R.string.dashboard_variable_unknown), style = MaterialTheme.typography.bodyMedium)
-        }
-        VariableSource.ESTIMATED_FROM_FACTS -> InfoCard {
-            Text(stringResource(R.string.dashboard_variable_estimated), style = MaterialTheme.typography.bodyMedium)
-        }
-        VariableSource.DECLARED -> Unit
-    }
-    if (debtBalanceMissing) {
-        InfoCard {
-            Text(
-                stringResource(R.string.dashboard_debt_balance_missing),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@Composable
-private fun MetricCard(result: MetricResult, money: (Long) -> String, onHelp: () -> Unit) {
-    val help = metricHelp(result.id)
-    val title = stringResource(help.title)
-    val value = metricValueText(result, money)
-    val status = stringResource(statusLabel(result.status))
-    val description = "$title: $value. $status"
-    Card(
-        Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) { contentDescription = description },
-    ) {
-        Column(Modifier.padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                HelpButton(onClick = onHelp, contentDescription = stringResource(R.string.metric_help_cd, title))
-            }
-            Row(Modifier.padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    value,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
-                )
-                StatusChip(result.status)
-            }
-            Text(
-                metricShortNorm(result.id),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(top = 4.dp, end = 12.dp)
-                    .clearAndSetSemantics { },
-            )
-        }
-    }
-}
-
-@Composable
-private fun metricValueText(result: MetricResult, money: (Long) -> String): String = when {
-    result.moneyMinor != null -> money(result.moneyMinor ?: 0L)
-    result.ratio != null -> Money.formatPercent(result.ratio ?: 0.0)
-    result.months != null -> stringResource(R.string.months_format, formatDecimal(result.months ?: 0.0))
-    else -> stringResource(R.string.value_undefined)
-}
-
-/** Метка статуса: цвет + значок + слово. */
-@Composable
-fun StatusChip(status: MetricStatus, modifier: Modifier = Modifier) {
+private fun TotalsCard(
+    totals: MonthTotals,
+    money: (Long) -> String,
+) {
     val colors = LocalStatusColors.current
-    val (container, content) = when (status) {
-        MetricStatus.GOOD -> colors.goodContainer to colors.onGood
-        MetricStatus.ATTENTION -> colors.attentionContainer to colors.onAttention
-        MetricStatus.RISK -> colors.riskContainer to colors.onRisk
-        MetricStatus.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            TotalsLine(stringResource(R.string.income), "+" + money(totals.incomeMinor), colors.income)
+            TotalsLine(stringResource(R.string.expenses), "−" + money(totals.expensesMinor), colors.expense)
+            HorizontalDivider()
+            TotalsLine(
+                stringResource(R.string.balance),
+                (if (totals.balanceMinor > 0) "+" else "") + money(totals.balanceMinor),
+                MaterialTheme.colorScheme.onSurface,
+                bold = true,
+            )
+        }
     }
-    Surface(color = container, shape = RoundedCornerShape(50), modifier = modifier) {
+}
+
+@Composable
+private fun TotalsLine(
+    label: String,
+    value: String,
+    color: Color,
+    bold: Boolean = false,
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodyLarge)
         Text(
-            "${statusGlyph(status)} ${stringResource(statusLabel(status))}",
-            color = content,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal,
+            color = color,
         )
     }
 }
 
 @Composable
-private fun StructureSection(state: DashboardUiState, money: (Long) -> String) {
+private fun StructureSection(
+    state: DashboardUiState,
+    money: (Long) -> String,
+    onOpenCategory: (Long, YearMonth) -> Unit,
+) {
     val slices = state.structure.filter { it.amountMinor > 0 }
     SectionTitle(stringResource(R.string.dashboard_structure_title))
     if (slices.isEmpty()) {
@@ -279,38 +171,43 @@ private fun StructureSection(state: DashboardUiState, money: (Long) -> String) {
         return
     }
     val palette = if (isSystemInDarkTheme()) ChartPalette.dark else ChartPalette.light
-    val segments = slices.mapIndexed { index, slice ->
-        ChartSegment(structureLabel(slice), slice.amountMinor, palette[index % palette.size])
-    }
+    val others = stringResource(R.string.structure_others)
+    val segments =
+        slices.mapIndexed { index, slice ->
+            val label = if (slice.categoryId == null) {
+                others
+            } else {
+                listOfNotNull(
+                    slice.icon,
+                    slice.name,
+                ).joinToString(" ")
+            }
+            val open = slice.categoryId?.let { id -> { onOpenCategory(id, state.month) } }
+            ChartSegment(label, slice.amountMinor, palette[index % palette.size], open)
+        }
     val total = slices.sumOf { it.amountMinor }
-    val summary = stringResource(R.string.dashboard_structure_cd) + ": " +
-        segments.joinToString("; ") { "${it.label} ${money(it.value)}" }
+    val summary =
+        stringResource(R.string.dashboard_structure_cd) + ": " +
+            segments.joinToString("; ") { "${it.label} ${money(it.value)}" }
     DonutChart(
         segments = segments,
-        centerTitle = stringResource(
-            when (state.mode) {
-                DashboardMode.PLAN -> R.string.dashboard_structure_center_plan
-                DashboardMode.FACT -> R.string.dashboard_structure_center_fact
-            },
-        ),
+        centerTitle = stringResource(R.string.dashboard_structure_center_fact),
         centerValue = money(total),
         formatValue = money,
         summary = summary,
     )
+    Text(
+        stringResource(R.string.dashboard_structure_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
-private fun structureLabel(slice: StructureSlice): String = when (slice.key) {
-    StructureKey.MANDATORY -> stringResource(R.string.structure_mandatory)
-    StructureKey.VARIABLE -> stringResource(R.string.structure_variable)
-    StructureKey.DEBT -> stringResource(R.string.structure_debt)
-    StructureKey.FREE -> stringResource(R.string.structure_free)
-    StructureKey.OTHERS -> stringResource(R.string.structure_others)
-    StructureKey.CATEGORY -> listOfNotNull(slice.icon, slice.name).joinToString(" ")
-}
-
-@Composable
-private fun BarsSection(state: DashboardUiState, money: (Long) -> String) {
+private fun BarsSection(
+    state: DashboardUiState,
+    money: (Long) -> String,
+) {
     SectionTitle(stringResource(R.string.dashboard_bars_title))
     if (state.monthlyBars.none { it.hasData }) {
         InfoCard { Text(stringResource(R.string.dashboard_bars_empty), style = MaterialTheme.typography.bodyMedium) }
@@ -320,10 +217,12 @@ private fun BarsSection(state: DashboardUiState, money: (Long) -> String) {
     val bars = state.monthlyBars.map { MonthBar(formatMonthShort(it.month), it.incomeMinor, it.expensesMinor) }
     val incomeLabel = stringResource(R.string.income)
     val expenseLabel = stringResource(R.string.expenses)
-    val summary = stringResource(R.string.dashboard_bars_cd) + ": " + state.monthlyBars.joinToString("; ") {
-        val period = formatPeriod(it.month, state.startDay)
-        "$period — $incomeLabel ${money(it.incomeMinor)}, $expenseLabel ${money(it.expensesMinor)}"
-    }
+    val summary =
+        stringResource(R.string.dashboard_bars_cd) + ": " +
+            state.monthlyBars.joinToString("; ") {
+                val period = formatPeriod(it.month, state.startDay)
+                "$period — $incomeLabel ${money(it.incomeMinor)}, $expenseLabel ${money(it.expensesMinor)}"
+            }
     IncomeExpenseBarChart(
         bars = bars,
         // Бирюзовый и янтарный различимы и по тону, и по яркости (в том числе при дальтонизме).
@@ -336,7 +235,11 @@ private fun BarsSection(state: DashboardUiState, money: (Long) -> String) {
 }
 
 @Composable
-private fun GoalsSection(state: DashboardUiState, money: (Long) -> String, onOpenGoals: () -> Unit) {
+private fun GoalsSection(
+    state: DashboardUiState,
+    money: (Long) -> String,
+    onOpenGoals: () -> Unit,
+) {
     SectionTitle(stringResource(R.string.dashboard_goals_title))
     if (state.goals.isEmpty()) {
         InfoCard {
@@ -383,48 +286,4 @@ private fun GoalsSection(state: DashboardUiState, money: (Long) -> String, onOpe
         }
     }
     TextButton(onClick = onOpenGoals) { Text(stringResource(R.string.dashboard_goals_open)) }
-}
-
-/** Подсказка «?»: что это, как считается, норма, 1–3 совета. */
-@Composable
-private fun MetricHelpSheet(id: MetricId, onDismiss: () -> Unit) {
-    val help = metricHelp(id)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(stringResource(help.title), style = MaterialTheme.typography.headlineSmall)
-            HelpBlock(R.string.metric_help_what, stringResource(help.what))
-            HelpBlock(R.string.metric_help_how, stringResource(help.how))
-            HelpBlock(R.string.metric_help_norm, metricNorm(id))
-            SectionTitle(stringResource(R.string.metric_help_tips))
-            help.tips.forEach { tip ->
-                Row {
-                    Text("•", Modifier.padding(end = 8.dp))
-                    Text(stringResource(tip), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            Text(
-                stringResource(R.string.disclaimer_short),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
-private fun HelpBlock(title: Int, body: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        SectionTitle(stringResource(title))
-        Text(body, style = MaterialTheme.typography.bodyMedium)
-    }
 }

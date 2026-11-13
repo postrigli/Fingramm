@@ -12,18 +12,7 @@ public object BackupValidator {
     private const val MAX_NOTIFY_MINUTE = 1439
 
     public fun validate(data: BackupData): List<String> =
-        profile(data) + uniqueIds(data) + transactions(data) + templates(data) + limits(data) + goals(data) +
-            nonNegativeAmounts(data) + settings(data)
-
-    private fun profile(data: BackupData): List<String> {
-        val issues = mutableListOf<String>()
-        if ((data.profile == null) != (data.survey == null)) issues += "profile и survey должны быть заданы вместе"
-        data.profile?.let {
-            if (it.familySize < 1) issues += "profile.familySize < 1"
-            if (it.childrenCount < 0) issues += "profile.childrenCount < 0"
-        }
-        return issues
-    }
+        uniqueIds(data) + transactions(data) + templates(data) + limits(data) + goals(data) + settings(data)
 
     private fun uniqueIds(data: BackupData): List<String> = listOfNotNull(
         duplicates("categories", data.categories.map { it.id }),
@@ -82,11 +71,6 @@ public object BackupValidator {
             "goal ${g.id}: цель должна быть > 0".takeIf { g.targetMinor != null && g.targetMinor <= 0 },
         )
     }
-
-    private fun nonNegativeAmounts(data: BackupData): List<String> =
-        data.incomeSources.filter { it.amountMinor < 0 }.map { "income ${it.id}: сумма < 0" } +
-            data.assets.filter { it.valueMinor < 0 }.map { "asset ${it.id}: стоимость < 0" } +
-            data.debts.filter { it.monthlyPaymentMinor < 0 }.map { "debt ${it.id}: платёж < 0" }
 
     /** Настройки, которые хранятся вне таблиц: время напоминаний и день начала месяца. */
     private fun settings(data: BackupData): List<String> {

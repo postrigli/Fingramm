@@ -1,6 +1,5 @@
 package app.fingramm.domain.stats
 
-import app.fingramm.domain.metrics.Benchmarks
 import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CategoryKind
 import app.fingramm.domain.model.CategoryLimit
@@ -73,27 +72,21 @@ public object StatsCalculator {
         totals.copy(expenseByCategory = expenses, incomeByCategory = incomes)
     }
 
-    /** Накопленный результат (доходы − расходы) по всем месяцам до указанного включительно. */
-    public fun cumulativeBalanceUpTo(totals: Map<YearMonth, MonthTotals>, month: YearMonth): Long =
-        totals.filterKeys { it <= month }.values.sumOf { it.balanceMinor }
-
     /**
-     * Оценка переменных расходов из фактических операций: среднее по последним полным месяцам
-     * (не более [maxMonths]), следующим за месяцем создания профиля и предшествующим текущему.
-     * Null, если подходящих месяцев с данными ещё нет.
+     * Средний результат месяца (доходы − расходы) по последним полным месяцам с данными, не больше [maxMonths]:
+     * по нему прогнозируется срок достижения целей. Null, если полных месяцев с данными ещё нет.
      */
-    public fun estimateVariableFromFacts(
+    public fun averageMonthlyFlow(
         totals: Map<YearMonth, MonthTotals>,
-        profileCreated: YearMonth,
         current: YearMonth,
-        maxMonths: Int = DEFAULT_ESTIMATE_MONTHS,
+        maxMonths: Int = DEFAULT_FLOW_MONTHS,
     ): Long? {
         val eligible = totals.values
-            .filter { it.month > profileCreated && it.month < current && it.hasData }
+            .filter { it.month < current && it.hasData }
             .sortedByDescending { it.month }
             .take(maxMonths)
         if (eligible.isEmpty()) return null
-        return eligible.sumOf { it.variableMinor } / eligible.size
+        return eligible.sumOf { it.balanceMinor } / eligible.size
     }
 
     public fun limitUsage(limit: CategoryLimit, spentMinor: Long): LimitUsage {
@@ -101,12 +94,15 @@ public object StatsCalculator {
         val status = when {
             limit.limitMinor <= 0 -> if (spentMinor > 0) LimitStatus.EXCEEDED else LimitStatus.OK
             spentMinor > limit.limitMinor -> LimitStatus.EXCEEDED
-            Money.compareToPercent(spentMinor, limit.limitMinor, Benchmarks.LIMIT_ATTENTION_PERCENT) >= 0 ->
+            Money.compareToPercent(spentMinor, limit.limitMinor, LIMIT_ATTENTION_PERCENT) >= 0 ->
                 LimitStatus.ATTENTION
             else -> LimitStatus.OK
         }
         return LimitUsage(limit, spentMinor, ratio, status)
     }
 
-    private const val DEFAULT_ESTIMATE_MONTHS = 3
+    /** С какой доли лимита категория помечается «внимание». */
+    public const val LIMIT_ATTENTION_PERCENT: Int = 80
+
+    private const val DEFAULT_FLOW_MONTHS = 3
 }

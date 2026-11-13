@@ -55,6 +55,7 @@ import app.fingramm.domain.model.GoalHorizon
 import app.fingramm.domain.money.Money
 import app.fingramm.ui.common.BackTopBar
 import app.fingramm.ui.common.ConfirmDialog
+import app.fingramm.ui.common.DateField
 import app.fingramm.ui.common.EmptyState
 import app.fingramm.ui.common.LoadingBox
 import app.fingramm.ui.common.LocalCurrency
@@ -64,7 +65,6 @@ import app.fingramm.ui.common.PrimaryButton
 import app.fingramm.ui.common.ScreenColumn
 import app.fingramm.ui.common.SectionTitle
 import app.fingramm.ui.common.formatDate
-import app.fingramm.ui.survey.DateField
 
 @Composable
 fun GoalsScreen(onAdd: () -> Unit, onEdit: (Long) -> Unit, viewModel: GoalsViewModel = hiltViewModel()) {

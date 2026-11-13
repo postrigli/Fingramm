@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.fingramm.data.db.AppDatabase
 import app.fingramm.data.repo.BackupRepository
 import app.fingramm.data.repo.BudgetRepository
+import app.fingramm.data.repo.CategoryPresetInstaller
 import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.GoalRepository
 import app.fingramm.data.repo.ImportMode
@@ -17,7 +18,9 @@ import app.fingramm.data.repo.TransactionFilter
 import app.fingramm.data.repo.TransactionRepository
 import app.fingramm.domain.model.Category
 import app.fingramm.domain.model.CategoryKind
+import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.DefaultCategories
+import app.fingramm.domain.model.Goal
 import app.fingramm.domain.model.GoalHorizon
 import app.fingramm.domain.model.RecurrenceFrequency
 import app.fingramm.domain.model.RecurringTemplate
@@ -27,13 +30,6 @@ import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.model.TransactionType
 import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.recurring.PendingOccurrence
-import app.fingramm.domain.survey.DefaultNames
-import app.fingramm.domain.survey.DraftAmount
-import app.fingramm.domain.survey.ExpenseDraft
-import app.fingramm.domain.survey.GoalDraft
-import app.fingramm.domain.survey.SurveyDraft
-import app.fingramm.domain.survey.SurveyMapper
-import app.fingramm.domain.survey.SurveyResult
 import app.fingramm.notifications.RecurringOccurrenceHandler
 import app.fingramm.widget.WidgetStateLoader
 import kotlinx.coroutines.CoroutineScope
@@ -78,7 +74,6 @@ class RepositoriesTest {
     private lateinit var backup: BackupRepository
 
     private val today = LocalDate.of(2026, 10, 10)
-    private val names = DefaultNames("Доход", "Актив", "Кредиты и долги")
 
     @Before
     fun setUp() {
@@ -102,32 +97,11 @@ class RepositoriesTest {
         scope.cancel()
     }
 
-    private val validDraft = SurveyDraft(
-        familySize = 3,
-        hasChildren = true,
-        childrenCount = 1,
-        incomeSources = listOf(DraftAmount("Зарплата", 10_000_000), DraftAmount("Подработка", 2_000_000)),
-        mandatory = ExpenseDraft(totalMinor = 4_000_000),
-        variable = ExpenseDraft(totalMinor = 2_000_000),
-        hasDebts = true,
-        debtPaymentMinor = 1_000_000,
-        hasCushion = true,
-        cushionMinor = 6_000_000,
-        mainGoal = app.fingramm.domain.survey.MainGoalDraft(
-            app.fingramm.domain.model.MainGoalKind.CUSHION,
-            targetMinor = 12_000_000,
-        ),
-        midGoals = listOf(GoalDraft("Квартира", 500_000_000, today.plusYears(3))),
-    )
-
     private fun presetCategories(): List<Category> = DefaultCategories.all.map {
         Category(name = it.key, type = it.type, kind = it.kind, icon = it.icon, isDebtPayment = it.isDebtPayment)
     }
 
-    private fun surveyResult(draft: SurveyDraft = validDraft): SurveyResult =
-        SurveyMapper.toResult(draft, today, defaultNames = names) { "Подушка" }
-
-    private fun onboard() = runBlocking { budget.completeOnboarding(surveyResult(), presetCategories()) }
+    private fun onboard() = runBlocking { budget.completeOnboarding(CurrencyCode.RUB, today, presetCategories()) }
 
     private fun categoryId(name: String): Long = runBlocking {
         categories.categories.first().first { it.name == name }.id
@@ -144,42 +118,70 @@ class RepositoriesTest {
     // ---------- Онбординг ----------
 
     @Test
-    fun onboardingPersistsProfileSurveyIncomeDebtsGoalsAndCategories() = runBlocking {
-        onboard()
-        val data = checkNotNull(budget.getBudget())
-        assertEquals(3, data.profile.familySize)
-        assertEquals(12_000_000L, data.incomeSources.sumOf { it.amountMinor })
-        assertEquals(1_000_000L, data.debts.single().monthlyPaymentMinor)
-        assertEquals(6_000_000L, data.survey.cushionMinor)
+    fun onboardingStoresCurrencyAndPresetCategories() = runBlocking {
+        budget.completeOnboarding(CurrencyCode.EUR, today, presetCategories())
+        val profile = checkNotNull(budget.profile.first())
+        assertEquals(CurrencyCode.EUR, profile.currency)
+        assertEquals(today, profile.createdAt)
         assertEquals(DefaultCategories.all.size, categories.categories.first().size)
-        val savedGoals = goals.goals.first().associateBy { it.title }
-        assertEquals(setOf("Подушка", "Квартира"), savedGoals.keys)
-        // Существующая подушка засчитана в прогресс главной цели.
-        assertEquals(6_000_000L, savedGoals.getValue("Подушка").savedMinor)
-        assertEquals(GoalHorizon.MID, savedGoals.getValue("Квартира").horizon)
-        assertEquals(GoalHorizon.YEAR, savedGoals.getValue("Подушка").horizon)
-    }
-
-    @Test
-    fun updatingSurveyReplacesRowsAndKeepsGoalsAndCategories() = runBlocking {
-        onboard()
-        val edited = validDraft.copy(
-            incomeSources = listOf(DraftAmount("Зарплата", 9_000_000)),
-            hasDebts = false,
-        )
-        budget.updateSurvey(surveyResult(edited))
-        val data = checkNotNull(budget.getBudget())
-        assertEquals(listOf(9_000_000L), data.incomeSources.map { it.amountMinor })
-        assertTrue(data.debts.isEmpty())
-        assertEquals(2, goals.goals.first().size)
-        assertEquals(DefaultCategories.all.size, categories.categories.first().size)
+        assertTrue(goals.goals.first().isEmpty())
     }
 
     @Test
     fun onboardingDoesNotReseedExistingCategories() = runBlocking {
         onboard()
-        budget.completeOnboarding(surveyResult(), presetCategories())
+        budget.completeOnboarding(CurrencyCode.RUB, today, presetCategories())
         assertEquals(DefaultCategories.all.size, categories.categories.first().size)
+    }
+
+    @Test
+    fun changingCurrencyKeepsEverythingElse() = runBlocking {
+        onboard()
+        budget.setCurrency(CurrencyCode.USD)
+        assertEquals(CurrencyCode.USD, budget.profile.first()?.currency)
+        assertEquals(DefaultCategories.all.size, categories.categories.first().size)
+    }
+
+    // ---------- Новые предустановленные категории ----------
+
+    private fun newCategory(name: String) =
+        Category(name = name, type = TransactionType.EXPENSE, kind = CategoryKind.VARIABLE, icon = "x")
+
+    @Test
+    fun addMissingSkipsCategoriesTheUserAlreadyHasIgnoringCase() = runBlocking {
+        onboard()
+        val added = categories.addMissing(listOf(newCategory("Табак"), newCategory("ТАБАК"), newCategory("groceries")))
+        assertEquals(1, added) // «Табак» новая; её копия и существующая «groceries» пропущены
+        assertEquals(1, categories.categories.first().count { it.name.equals("табак", ignoreCase = true) })
+    }
+
+    @Test
+    fun installerAddsOnlyNewPresetsOnceAndNeverDuplicatesUserCategories() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        // Установка до обновления: старый набор категорий, плюс «Алкоголь», которую пользователь завёл сам.
+        val oldSet = presetCategories().filter { p -> DefaultCategories.all.first { it.key == p.name }.since == 1 }
+        budget.completeOnboarding(CurrencyCode.RUB, today, oldSet)
+        categories.save(newCategory("Алкоголь"), null)
+        val installer = CategoryPresetInstaller(context, budget, categories, settings)
+        val before = categories.categories.first().size
+
+        installer.sync()
+        val after = categories.categories.first()
+        assertEquals(before + DefaultCategories.addedAfter(1).size - 1, after.size)
+        assertEquals(1, after.count { it.name == "Алкоголь" })
+        assertTrue(after.any { it.name == "Табак и никотин" })
+        assertEquals(DefaultCategories.CURRENT_VERSION, settings.current().presetsVersion)
+
+        // Повторный запуск ничего не добавляет: набор этой версии уже установлен.
+        installer.sync()
+        assertEquals(after.size, categories.categories.first().size)
+    }
+
+    @Test
+    fun installerDoesNothingBeforeTheFirstLaunchIsFinished() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        CategoryPresetInstaller(context, budget, categories, settings).sync()
+        assertTrue(categories.categories.first().isEmpty())
     }
 
     // ---------- Операции ----------
@@ -316,11 +318,13 @@ class RepositoriesTest {
     @Test
     fun goalTopUpNeverGoesBelowZero() = runBlocking {
         onboard()
-        val goal = goals.goals.first().first { it.title == "Квартира" }
-        goals.addToSaved(goal.id, 5_000)
-        assertEquals(5_000L, goals.get(goal.id)?.savedMinor)
-        goals.addToSaved(goal.id, -9_000)
-        assertEquals(0L, goals.get(goal.id)?.savedMinor)
+        val id = goals.save(
+            Goal(title = "Квартира", targetMinor = 500_000_000, horizon = GoalHorizon.MID, createdAt = today),
+        )
+        goals.addToSaved(id, 5_000)
+        assertEquals(5_000L, goals.get(id)?.savedMinor)
+        goals.addToSaved(id, -9_000)
+        assertEquals(0L, goals.get(id)?.savedMinor)
     }
 
     // ---------- Регулярные операции ----------

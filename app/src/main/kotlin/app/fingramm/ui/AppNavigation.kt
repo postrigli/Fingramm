@@ -32,7 +32,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.fingramm.R
 import app.fingramm.domain.model.TransactionType
-import app.fingramm.domain.survey.SurveyStep
 import app.fingramm.ui.dashboard.DashboardScreen
 import app.fingramm.ui.goals.GoalEditScreen
 import app.fingramm.ui.goals.GoalsScreen
@@ -46,8 +45,8 @@ import app.fingramm.ui.more.RecurringListScreen
 import app.fingramm.ui.more.SettingsScreen
 import app.fingramm.ui.navigation.Routes
 import app.fingramm.ui.onboarding.OnboardingScreen
-import app.fingramm.ui.survey.SurveyEditScreen
-import app.fingramm.ui.survey.SurveySummaryScreen
+import app.fingramm.ui.report.ReportScreen
+import app.fingramm.ui.stats.CategoryStatsScreen
 import app.fingramm.ui.transactions.TransactionEditScreen
 import app.fingramm.ui.transactions.TransactionsScreen
 import app.fingramm.widget.QuickAction
@@ -65,6 +64,13 @@ private fun idArgument() = navArgument("id") {
     type = NavType.LongType
     defaultValue = Routes.NEW
 }
+
+private fun periodArgument() =
+    navArgument("period") {
+        type = NavType.StringType
+        nullable = true
+        defaultValue = null
+    }
 
 /** Граф навигации и нижняя панель (Сводка · Операции · Цели · Ещё). */
 @Composable
@@ -120,7 +126,10 @@ fun AppNavigation(
                 )
             }
             composable(Routes.DASHBOARD) {
-                DashboardScreen(onOpenGoals = { navController.navigateTopLevel(Routes.GOALS) })
+                DashboardScreen(
+                    onOpenGoals = { navController.navigateTopLevel(Routes.GOALS) },
+                    onOpenCategory = { id, month -> navController.navigate(Routes.categoryStats(id, month)) },
+                )
             }
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(
@@ -140,7 +149,7 @@ fun AppNavigation(
             }
             composable(Routes.MORE) {
                 MoreScreen(
-                    onOpenSurvey = { navController.navigate(Routes.SURVEY) },
+                    onOpenReport = { navController.navigate(Routes.report()) },
                     onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                     onOpenRecurring = { navController.navigate(Routes.RECURRING) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
@@ -193,16 +202,18 @@ fun AppNavigation(
             composable(Routes.RECURRING_EDIT, arguments = listOf(idArgument())) {
                 RecurringEditScreen(onBack = { navController.popBackStack() })
             }
-            composable(Routes.SURVEY) {
-                SurveySummaryScreen(
+            composable(Routes.CATEGORY_STATS, arguments = listOf(idArgument(), periodArgument())) {
+                CategoryStatsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenStep = { step: SurveyStep -> navController.navigate(Routes.surveyStep(step.name)) },
+                    onOpenTransaction = { navController.navigate(Routes.transactionEdit(it)) },
                 )
             }
-            composable(
-                Routes.SURVEY_STEP,
-                arguments = listOf(navArgument("step") { type = NavType.StringType }),
-            ) { SurveyEditScreen(onBack = { navController.popBackStack() }) }
+            composable(Routes.REPORT, arguments = listOf(periodArgument())) {
+                ReportScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenCategory = { id, period -> navController.navigate(Routes.categoryStats(id, period)) },
+                )
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
@@ -258,6 +269,10 @@ private fun NavHostController.perform(action: QuickAction) {
         is QuickAction.EditPending -> {
             goFresh(Routes.TRANSACTIONS)
             navigate(Routes.transactionEdit(template = action.templateId))
+        }
+        is QuickAction.OpenReport -> {
+            goFresh(Routes.DASHBOARD)
+            navigate(Routes.report(action.period))
         }
         QuickAction.OpenDashboard -> goFresh(Routes.DASHBOARD)
     }
