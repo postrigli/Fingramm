@@ -9,8 +9,10 @@ import app.fingramm.R
 import app.fingramm.data.repo.AppSettings
 import app.fingramm.data.repo.BackupRepository
 import app.fingramm.data.repo.BudgetRepository
+import app.fingramm.data.repo.CategoryRepository
 import app.fingramm.data.repo.ImportMode
 import app.fingramm.data.repo.SettingsRepository
+import app.fingramm.data.repo.StatsRepository
 import app.fingramm.domain.backup.BackupCodec
 import app.fingramm.domain.backup.BackupData
 import app.fingramm.domain.backup.BackupDecodeResult
@@ -22,6 +24,7 @@ import app.fingramm.domain.backup.CsvLabels
 import app.fingramm.domain.model.CurrencyCode
 import app.fingramm.domain.model.ReminderMode
 import app.fingramm.domain.model.ReminderSettings
+import app.fingramm.domain.stats.StatsCalculator
 import app.fingramm.notifications.MonthReportScheduler
 import app.fingramm.notifications.RecurringReminderScheduler
 import app.fingramm.notifications.ReminderScheduler
@@ -36,6 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -55,7 +59,14 @@ class SettingsViewModel @Inject constructor(
     private val recurringReminders: RecurringReminderScheduler,
     private val monthReports: MonthReportScheduler,
     private val backup: BackupRepository,
+    stats: StatsRepository,
+    categories: CategoryRepository,
 ) : ViewModel() {
+    /** Итог всех внесённых операций (доходы минус расходы): остаток на сегодня = начальный остаток + он. */
+    val trackedMinor: StateFlow<Long> = combine(stats.monthCategoryTotals, categories.categories) { rows, list ->
+        StatsCalculator.currentBalance(0, StatsCalculator.monthTotals(rows, list.associateBy { it.id }))
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0L)
+
     val state: StateFlow<AppSettings> =
         settings.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), AppSettings())
 
@@ -72,6 +83,14 @@ class SettingsViewModel @Inject constructor(
     /** Остаток средств на начало учёта: от него считается «Остаток средств» на сводке. */
     fun setOpeningBalance(minor: Long) {
         viewModelScope.launch { settings.setOpeningBalance(minor) }
+    }
+
+    /**
+     * Сверка с банком: приложение должно показывать [actualMinor]. Пересчитывается только начальный остаток,
+     * операции остаются как есть.
+     */
+    fun reconcile(actualMinor: Long) {
+        viewModelScope.launch { settings.setOpeningBalance(actualMinor - trackedMinor.value) }
     }
 
     /** День начала расчётного месяца 1–28. Данные не меняются: итоги пересчитываются по новым границам. */

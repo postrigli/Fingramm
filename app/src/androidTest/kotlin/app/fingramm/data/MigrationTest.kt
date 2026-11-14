@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import app.fingramm.data.db.AppDatabase
 import app.fingramm.data.db.MIGRATION_1_2
 import app.fingramm.data.db.MIGRATION_2_3
+import app.fingramm.data.db.MIGRATION_3_4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -101,6 +102,33 @@ class MigrationTest {
             "SELECT name FROM sqlite_master WHERE type = 'table' " +
                 "AND name IN ('survey_answers', 'income_source', 'asset', 'debt')",
         ).use { cursor -> assertEquals(0, cursor.count) }
+        db.close()
+    }
+
+    @Test
+    fun migration3To4MarksNoExistingCategoryAsTransfer() {
+        helper.createDatabase(DB_NAME, 3).apply {
+            execSQL(
+                "INSERT INTO category (id, name, type, kind, icon, archived, isDebtPayment) " +
+                    "VALUES (1, 'Продукты', 'EXPENSE', 'MANDATORY', 'C', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO transaction_entry (id, type, amountMinor, categoryId, date, note, noteLower, " +
+                    "accountType, memberId, recurringId, createdAt) " +
+                    "VALUES (5, 'EXPENSE', 12300, 1, '2026-10-05', 'Хлеб', 'хлеб', NULL, NULL, NULL, 1)",
+            )
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, MIGRATION_3_4)
+        db.query("SELECT isTransfer, name FROM category WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+            assertEquals("Продукты", cursor.getString(1))
+        }
+        db.query("SELECT amountMinor FROM transaction_entry WHERE id = 5").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(12_300L, cursor.getLong(0))
+        }
         db.close()
     }
 

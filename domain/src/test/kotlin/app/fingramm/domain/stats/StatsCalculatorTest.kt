@@ -108,6 +108,18 @@ class StatsCalculatorTest {
     }
 
     @Test
+    fun `reconciliation sets the opening balance so the app shows the real money`() {
+        val totals = StatsCalculator.monthTotals(
+            listOf(row(aug, 4, TransactionType.INCOME, 1_000), row(sep, 1, TransactionType.EXPENSE, 300)),
+            categories,
+        )
+        val opening = StatsCalculator.openingFor(5_000, totals)
+        assertEquals(4_300L, opening)
+        assertEquals(5_000L, StatsCalculator.currentBalance(opening, totals))
+        assertEquals(-200L, StatsCalculator.openingFor(-200, emptyMap()))
+    }
+
+    @Test
     fun `limit usage statuses`() {
         val limit = CategoryLimit(2, 10_000)
         assertEquals(LimitStatus.OK, StatsCalculator.limitUsage(limit, 7_999).status)

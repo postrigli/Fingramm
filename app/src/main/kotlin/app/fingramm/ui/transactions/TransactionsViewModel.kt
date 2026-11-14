@@ -165,7 +165,8 @@ class TransactionsViewModel @Inject constructor(
         currency,
     ) { list, overview, templates, currency ->
         val today = LocalDate.now(clock)
-        val groups = list.items.groupBy { it.date }.map { (date, rows) -> DayGroup(date, netOf(rows), rows) }
+        val transfers = list.categories.filter { it.isTransfer }.map { it.id }.toSet()
+        val groups = list.items.groupBy { it.date }.map { (date, rows) -> DayGroup(date, netOf(rows, transfers), rows) }
         TransactionsUiState(
             loading = false,
             currency = currency,
@@ -223,8 +224,10 @@ class TransactionsViewModel @Inject constructor(
         viewModelScope.launch { recurring.skip(occurrence) }
     }
 
-    private fun netOf(items: List<Transaction>): Long =
-        items.sumOf { if (it.type == TransactionType.INCOME) it.amountMinor else -it.amountMinor }
+    /** Итог дня; переводы между своими счетами в него не входят. */
+    private fun netOf(items: List<Transaction>, transferCategories: Set<Long>): Long =
+        items.filter { it.categoryId !in transferCategories }
+            .sumOf { if (it.type == TransactionType.INCOME) it.amountMinor else -it.amountMinor }
 
     /** «Этот» и «прошлый месяц» — расчётные месяцы с учётом дня их начала. */
     private fun periodRange(f: ListFilters, startDay: Int): Pair<LocalDate?, LocalDate?> {

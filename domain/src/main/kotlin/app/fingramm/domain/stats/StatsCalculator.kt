@@ -96,6 +96,13 @@ public object StatsCalculator {
     public fun currentBalance(openingMinor: Long, totals: Map<YearMonth, MonthTotals>): Long =
         openingMinor + totals.values.sumOf { it.balanceMinor }
 
+    /**
+     * Начальный остаток, при котором приложение покажет [actualMinor]: сверка с банком. Остаток на сегодня равен
+     * начальному плюс результат всех операций, поэтому начальный = фактический − результат операций.
+     */
+    public fun openingFor(actualMinor: Long, totals: Map<YearMonth, MonthTotals>): Long =
+        actualMinor - currentBalance(0, totals)
+
     public fun limitUsage(limit: CategoryLimit, spentMinor: Long): LimitUsage {
         val ratio = Money.ratio(spentMinor, limit.limitMinor) ?: if (spentMinor > 0) Double.POSITIVE_INFINITY else 0.0
         val status = when {

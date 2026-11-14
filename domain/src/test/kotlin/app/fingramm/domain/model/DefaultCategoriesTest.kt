@@ -24,4 +24,13 @@ class DefaultCategoriesTest {
     fun `every preset belongs to a known version`() {
         assertTrue(DefaultCategories.all.all { it.since in 1..DefaultCategories.CURRENT_VERSION })
     }
+
+    @Test
+    fun `transfer presets exist for both directions and are excluded from totals`() {
+        val transfers = DefaultCategories.all.filter { it.isTransfer }
+        assertEquals(setOf(TransactionType.EXPENSE, TransactionType.INCOME), transfers.map { it.type }.toSet())
+        assertTrue(transfers.all { it.since == DefaultCategories.CURRENT_VERSION })
+        // Пользователи, у которых уже стоит набор версии 2, получат только переводы.
+        assertEquals(transfers.map { it.key }.toSet(), DefaultCategories.addedAfter(2).map { it.key }.toSet())
+    }
 }

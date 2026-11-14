@@ -35,6 +35,7 @@ data class CategoryEntity(
     val icon: String,
     val archived: Boolean,
     val isDebtPayment: Boolean,
+    val isTransfer: Boolean = false,
 )
 
 @Entity(

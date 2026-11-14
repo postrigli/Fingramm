@@ -134,9 +134,13 @@ interface TransactionDao {
      */
     @Query(
         """
-        SELECT substr(date(date, '-' || :shiftDays || ' days'), 1, 7) AS ym, categoryId, type, SUM(amountMinor) AS total
+        SELECT substr(date(transaction_entry.date, '-' || :shiftDays || ' days'), 1, 7) AS ym,
+               transaction_entry.categoryId AS categoryId, transaction_entry.type AS type,
+               SUM(transaction_entry.amountMinor) AS total
         FROM transaction_entry
-        GROUP BY ym, categoryId, type
+        INNER JOIN category ON category.id = transaction_entry.categoryId
+        WHERE category.isTransfer = 0
+        GROUP BY ym, transaction_entry.categoryId, transaction_entry.type
         """,
     )
     fun observeMonthCategoryTotals(shiftDays: Int): Flow<List<MonthCategoryRow>>

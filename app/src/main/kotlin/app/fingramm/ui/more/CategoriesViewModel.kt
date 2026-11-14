@@ -62,6 +62,8 @@ data class CategoryFormState(
     val type: TransactionType = TransactionType.EXPENSE,
     val kind: CategoryKind = CategoryKind.VARIABLE,
     val isDebtPayment: Boolean = false,
+    /** Признак «перевод» не редактируется в форме, но должен сохраниться при правке категории. */
+    val isTransfer: Boolean = false,
     val archived: Boolean = false,
     val limitMinor: Long? = null,
     val showErrors: Boolean = false,
@@ -105,6 +107,7 @@ class CategoryEditViewModel @Inject constructor(
                         type = category.type,
                         kind = category.kind,
                         isDebtPayment = category.isDebtPayment,
+                        isTransfer = category.isTransfer,
                         archived = category.archived,
                         limitMinor = limit?.limitMinor,
                     )
@@ -140,6 +143,7 @@ class CategoryEditViewModel @Inject constructor(
                     icon = s.icon.ifBlank { CategoryFormState.DEFAULT_ICON },
                     archived = s.archived,
                     isDebtPayment = isExpense && s.kind == CategoryKind.MANDATORY && s.isDebtPayment,
+                    isTransfer = s.isTransfer,
                 ),
                 limitMinor = s.limitMinor.takeIf { isExpense },
             )

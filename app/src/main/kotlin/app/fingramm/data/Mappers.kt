@@ -23,9 +23,9 @@ fun BudgetProfile.toEntity() = BudgetProfileEntity(
     createdAt = createdAt,
 )
 
-fun CategoryEntity.toDomain() = Category(id, name, type, kind, icon, archived, isDebtPayment)
+fun CategoryEntity.toDomain() = Category(id, name, type, kind, icon, archived, isDebtPayment, isTransfer)
 
-fun Category.toEntity() = CategoryEntity(id, name, type, kind, icon, archived, isDebtPayment)
+fun Category.toEntity() = CategoryEntity(id, name, type, kind, icon, archived, isDebtPayment, isTransfer)
 
 fun TransactionEntity.toDomain() = Transaction(
     id = id,

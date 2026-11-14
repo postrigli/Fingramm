@@ -47,6 +47,8 @@ object CategoryPresets {
             "benefits" to R.string.cat_benefits,
             "sale_items" to R.string.cat_sale_items,
             "gifts_income" to R.string.cat_gifts_income,
+            "transfer_out" to R.string.cat_transfer,
+            "transfer_in" to R.string.cat_transfer,
         )
 
     /** Все предустановленные категории. */
@@ -73,5 +75,6 @@ object CategoryPresets {
         kind = preset.kind,
         icon = preset.icon,
         isDebtPayment = preset.isDebtPayment,
+        isTransfer = preset.isTransfer,
     )
 }

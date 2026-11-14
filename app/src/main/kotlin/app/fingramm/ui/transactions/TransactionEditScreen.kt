@@ -164,6 +164,13 @@ fun TransactionEditScreen(onBack: () -> Unit, viewModel: TransactionEditViewMode
                     )
                 }
             }
+            if (state.editingId == null) {
+                Text(
+                    stringResource(R.string.transfers_warning_short),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 

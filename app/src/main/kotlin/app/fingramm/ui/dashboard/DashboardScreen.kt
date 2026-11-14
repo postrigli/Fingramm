@@ -53,6 +53,7 @@ import java.time.YearMonth
 fun DashboardScreen(
     onOpenGoals: () -> Unit,
     onOpenCategory: (categoryId: Long, month: YearMonth) -> Unit,
+    onReconcile: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -66,7 +67,7 @@ fun DashboardScreen(
         }
         val money = { minor: Long -> Money.format(minor, state.currency) }
         ScreenColumn(Modifier.padding(padding)) {
-            BalanceCard(state.balanceMinor, money)
+            BalanceCard(state.balanceMinor, money, onReconcile)
             PeriodSwitcher(
                 label = formatPeriod(state.month, state.startDay),
                 canGoNext = state.canGoNext,
@@ -116,7 +117,7 @@ fun DashboardScreen(
 
 /** Сколько денег у пользователя сейчас (начальный остаток плюс все операции). */
 @Composable
-private fun BalanceCard(balanceMinor: Long, money: (Long) -> String) {
+private fun BalanceCard(balanceMinor: Long, money: (Long) -> String, onReconcile: () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -130,6 +131,7 @@ private fun BalanceCard(balanceMinor: Long, money: (Long) -> String) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            TextButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_button)) }
         }
     }
 }

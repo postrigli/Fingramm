@@ -27,3 +27,13 @@ val MIGRATION_2_3: Migration = object : Migration(2, 3) {
         db.execSQL("DROP TABLE IF EXISTS debt")
     }
 }
+
+/**
+ * 3 → 4: категории получили признак «перевод между своими счетами» (в итоги не входит). У всех прежних категорий
+ * он выключен, поэтому итоги и остаток не меняются.
+ */
+val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE category ADD COLUMN isTransfer INTEGER NOT NULL DEFAULT 0")
+    }
+}

@@ -143,6 +143,11 @@ private fun BalanceSection(state: OnboardingUiState, onUpdate: ((OnboardingUiSta
         onValueChange = { value -> onUpdate { it.copy(balanceMinor = value) } },
         suffix = state.currency.symbol,
     )
+    Text(
+        stringResource(R.string.transfers_warning),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable

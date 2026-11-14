@@ -11,6 +11,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import kotlin.math.abs
 fun ReportScreen(
     onBack: () -> Unit,
     onOpenCategory: (categoryId: Long, period: YearMonth) -> Unit,
+    onReconcile: () -> Unit,
     viewModel: ReportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -65,6 +67,10 @@ fun ReportScreen(
             TotalsSection(state, money)
             TopSection(state, money) { id -> onOpenCategory(id, state.period) }
             GrowthSection(state, money) { id -> onOpenCategory(id, state.period) }
+            InfoCard {
+                Text(stringResource(R.string.report_reconcile_text), style = MaterialTheme.typography.bodyMedium)
+                TextButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_button)) }
+            }
         }
     }
 }

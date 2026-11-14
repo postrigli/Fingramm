@@ -129,6 +129,7 @@ fun AppNavigation(
                 DashboardScreen(
                     onOpenGoals = { navController.navigateTopLevel(Routes.GOALS) },
                     onOpenCategory = { id, month -> navController.navigate(Routes.categoryStats(id, month)) },
+                    onReconcile = { navController.navigate(Routes.SETTINGS) },
                 )
             }
             composable(Routes.TRANSACTIONS) {
@@ -212,6 +213,7 @@ fun AppNavigation(
                 ReportScreen(
                     onBack = { navController.popBackStack() },
                     onOpenCategory = { id, period -> navController.navigate(Routes.categoryStats(id, period)) },
+                    onReconcile = { navController.navigate(Routes.SETTINGS) },
                 )
             }
             composable(Routes.SETTINGS) {

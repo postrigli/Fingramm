@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,7 +62,13 @@ fun BalanceInput(
         AlertDialog(
             onDismissRequest = { showHelp = false },
             title = { Text(stringResource(R.string.balance_help_title)) },
-            text = { Text(stringResource(R.string.balance_help_text), style = MaterialTheme.typography.bodyMedium) },
+            text = {
+                Text(
+                    stringResource(R.string.balance_help_text),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
             confirmButton = { TextButton(onClick = { showHelp = false }) { Text(stringResource(R.string.action_ok)) } },
         )
     }

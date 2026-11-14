@@ -30,6 +30,7 @@ import app.fingramm.domain.model.Transaction
 import app.fingramm.domain.model.TransactionType
 import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.domain.recurring.PendingOccurrence
+import app.fingramm.domain.stats.StatsCalculator
 import app.fingramm.notifications.RecurringOccurrenceHandler
 import app.fingramm.widget.WidgetStateLoader
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +59,7 @@ import java.time.ZoneOffset
 /** Репозитории поверх Room в памяти (Robolectric): запросы, поиск, фильтры, регулярные операции, бэкап. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
+@Suppress("LargeClass") // один набор репозиториев на Room in-memory: общий setUp важнее размера класса
 class RepositoriesTest {
     @get:Rule
     val tmp = TemporaryFolder()
@@ -98,7 +100,14 @@ class RepositoriesTest {
     }
 
     private fun presetCategories(): List<Category> = DefaultCategories.all.map {
-        Category(name = it.key, type = it.type, kind = it.kind, icon = it.icon, isDebtPayment = it.isDebtPayment)
+        Category(
+            name = it.key,
+            type = it.type,
+            kind = it.kind,
+            icon = it.icon,
+            isDebtPayment = it.isDebtPayment,
+            isTransfer = it.isTransfer,
+        )
     }
 
     private fun onboard() = runBlocking { budget.completeOnboarding(CurrencyCode.RUB, today, presetCategories()) }
@@ -713,5 +722,52 @@ class RepositoriesTest {
         val incoming = backup.snapshot().copy(openingBalanceMinor = 9_000_000)
         backup.importData(incoming, ImportMode.MERGE)
         assertEquals(700_000L, settings.current().openingBalanceMinor)
+    }
+
+    @Test
+    fun transfersBetweenOwnAccountsAreNotCountedAnywhere() = runBlocking {
+        onboard()
+        transactions.add(tx(100_000, "salary", today, type = TransactionType.INCOME), 1)
+        transactions.add(tx(30_000, "groceries", today), 2)
+        // Пополнение карты и перевод между своими счетами: ни доход, ни расход.
+        transactions.add(tx(500_000, "transfer_out", today), 3)
+        transactions.add(tx(500_000, "transfer_in", today, type = TransactionType.INCOME), 4)
+
+        val rows = stats.monthCategoryTotals.first()
+        assertEquals(setOf(categoryId("salary"), categoryId("groceries")), rows.map { it.categoryId }.toSet())
+        val totals = StatsCalculator.monthTotals(rows, categories.categories.first().associateBy { it.id })
+        val month = totals.getValue(YearMonth.from(today))
+        assertEquals(100_000L, month.incomeMinor)
+        assertEquals(30_000L, month.expensesMinor)
+        assertEquals(70_000L, StatsCalculator.currentBalance(0, totals))
+        // Операция при этом сохранена и видна в списке.
+        assertEquals(4, transactions.observe(TransactionFilter(), categories.categories.first(), 10).first().size)
+    }
+
+    @Test
+    fun theTransferFlagSurvivesBackupAndRestore() = runBlocking {
+        onboard()
+        val snapshot = backup.snapshot()
+        assertTrue(snapshot.categories.filter { it.isTransfer }.size == 2)
+        backup.wipe()
+        backup.importData(snapshot, ImportMode.REPLACE)
+        assertEquals(2, categories.categories.first().count { it.isTransfer })
+    }
+
+    @Test
+    fun reconcilingMakesTheBalanceMatchTheBank() = runBlocking {
+        onboard()
+        settings.setOpeningBalance(1_000_000)
+        transactions.add(tx(200_000, "salary", today, type = TransactionType.INCOME), 1)
+        transactions.add(tx(50_000, "groceries", today), 2)
+        val totals = StatsCalculator.monthTotals(
+            stats.monthCategoryTotals.first(),
+            categories.categories.first().associateBy { it.id },
+        )
+        assertEquals(1_150_000L, StatsCalculator.currentBalance(settings.current().openingBalanceMinor, totals))
+        // В банке на самом деле 1 100 000: приложение пересчитывает только начальный остаток.
+        settings.setOpeningBalance(StatsCalculator.openingFor(1_100_000, totals))
+        assertEquals(1_100_000L, StatsCalculator.currentBalance(settings.current().openingBalanceMinor, totals))
+        assertEquals(2, transactions.observe(TransactionFilter(), categories.categories.first(), 10).first().size)
     }
 }

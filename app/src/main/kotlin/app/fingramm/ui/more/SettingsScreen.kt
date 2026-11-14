@@ -36,14 +36,12 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.fingramm.R
 import app.fingramm.domain.model.ReminderMode
-import app.fingramm.domain.money.Money
 import app.fingramm.domain.period.BudgetPeriod
 import app.fingramm.security.AppLock
 import app.fingramm.security.findFragmentActivity
 import app.fingramm.ui.common.BackTopBar
 import app.fingramm.ui.common.ConfirmDialog
 import app.fingramm.ui.common.InfoCard
-import app.fingramm.ui.common.LocalCurrency
 import app.fingramm.ui.common.RadioOption
 import app.fingramm.ui.common.ScreenColumn
 import app.fingramm.ui.common.SectionTitle
@@ -59,6 +57,7 @@ import java.time.LocalDate
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
+    val tracked by viewModel.trackedMinor.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val requestPermission = rememberNotificationPermissionRequest()
     var allowed by remember { mutableStateOf(notificationsAllowed(context)) }
@@ -70,7 +69,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
     var confirmWipe by remember { mutableStateOf(false) }
     var lockError by remember { mutableStateOf(false) }
     var pickingMonthStart by remember { mutableStateOf(false) }
-    var editingBalance by remember { mutableStateOf(false) }
     val reminder = settings.reminder
 
     Scaffold(topBar = { BackTopBar(stringResource(R.string.settings_title), onBack) }) { padding ->
@@ -127,7 +125,12 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
                 }
             }
 
-            OpeningBalanceSection(settings.openingBalanceMinor, onEdit = { editingBalance = true })
+            OpeningBalanceSection(
+                openingMinor = settings.openingBalanceMinor,
+                trackedMinor = tracked,
+                onSetOpening = viewModel::setOpeningBalance,
+                onReconcile = viewModel::reconcile,
+            )
 
             SectionTitle(stringResource(R.string.settings_month))
             Text(stringResource(R.string.settings_month_hint), style = MaterialTheme.typography.bodySmall)
@@ -209,15 +212,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
             },
         )
     }
-    OpeningBalanceDialogHost(
-        show = editingBalance,
-        currentMinor = settings.openingBalanceMinor,
-        onSave = { minor ->
-            viewModel.setOpeningBalance(minor)
-            editingBalance = false
-        },
-        onDismiss = { editingBalance = false },
-    )
     if (pickingMonthStart) {
         MonthStartDialog(
             selected = settings.monthStartDay,
@@ -238,18 +232,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenBackup: () -> Unit, viewModel: Sett
                 viewModel.wipeAll()
             },
             onDismiss = { confirmWipe = false },
-        )
-    }
-}
-
-/** Остаток средств на начало учёта: показывает значение и открывает диалог правки. */
-@Composable
-private fun OpeningBalanceSection(openingMinor: Long, onEdit: () -> Unit) {
-    SectionTitle(stringResource(R.string.settings_balance_title))
-    Text(stringResource(R.string.settings_balance_hint), style = MaterialTheme.typography.bodySmall)
-    OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
-        Text(
-            stringResource(R.string.settings_balance_button, Money.format(openingMinor, LocalCurrency.current)),
         )
     }
 }

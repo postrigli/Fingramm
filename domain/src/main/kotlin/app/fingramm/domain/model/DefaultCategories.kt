@@ -7,13 +7,15 @@ public data class PresetCategory(
     val kind: CategoryKind,
     val icon: String,
     val isDebtPayment: Boolean = false,
+    /** Перевод между своими счетами: в итоги не входит (см. `Category.isTransfer`). */
+    val isTransfer: Boolean = false,
     /** Версия набора, в которой категория появилась: при обновлении приложения добавляются только более новые. */
     val since: Int = 1,
 )
 
 public object DefaultCategories {
     /** Версия набора предустановленных категорий; растёт, когда в набор добавляются новые. */
-    public const val CURRENT_VERSION: Int = 2
+    public const val CURRENT_VERSION: Int = 3
 
     public val all: List<PresetCategory> = listOf(
         PresetCategory("groceries", TransactionType.EXPENSE, CategoryKind.MANDATORY, "🛒"),
@@ -53,6 +55,22 @@ public object DefaultCategories {
         PresetCategory("benefits", TransactionType.INCOME, CategoryKind.VARIABLE, "🏛", since = 2),
         PresetCategory("sale_items", TransactionType.INCOME, CategoryKind.VARIABLE, "🏷", since = 2),
         PresetCategory("gifts_income", TransactionType.INCOME, CategoryKind.VARIABLE, "🤝", since = 2),
+        PresetCategory(
+            "transfer_out",
+            TransactionType.EXPENSE,
+            CategoryKind.VARIABLE,
+            "🔄",
+            isTransfer = true,
+            since = 3,
+        ),
+        PresetCategory(
+            "transfer_in",
+            TransactionType.INCOME,
+            CategoryKind.VARIABLE,
+            "🔄",
+            isTransfer = true,
+            since = 3,
+        ),
     )
 
     /** Категории, появившиеся после набора версии [version]. */
