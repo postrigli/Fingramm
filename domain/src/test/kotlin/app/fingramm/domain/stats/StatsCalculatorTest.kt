@@ -92,6 +92,22 @@ class StatsCalculatorTest {
     }
 
     @Test
+    fun `current balance is opening plus everything earned minus everything spent`() {
+        val totals = StatsCalculator.monthTotals(
+            listOf(
+                row(aug, 4, TransactionType.INCOME, 1_000),
+                row(aug, 1, TransactionType.EXPENSE, 300),
+                row(sep, 2, TransactionType.EXPENSE, 900),
+                row(oct, 4, TransactionType.INCOME, 500),
+            ),
+            categories,
+        )
+        assertEquals(10_300L, StatsCalculator.currentBalance(10_000, totals))
+        assertEquals(-1_000L, StatsCalculator.currentBalance(-1_300, totals))
+        assertEquals(0L, StatsCalculator.currentBalance(0, emptyMap()))
+    }
+
+    @Test
     fun `limit usage statuses`() {
         val limit = CategoryLimit(2, 10_000)
         assertEquals(LimitStatus.OK, StatsCalculator.limitUsage(limit, 7_999).status)

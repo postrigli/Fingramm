@@ -89,6 +89,13 @@ public object StatsCalculator {
         return eligible.sumOf { it.balanceMinor } / eligible.size
     }
 
+    /**
+     * Сколько денег сейчас: остаток на начало учёта плюс все доходы минус все расходы за всё время.
+     * Месяцы суммируются целиком, поэтому результат не зависит от дня начала месяца.
+     */
+    public fun currentBalance(openingMinor: Long, totals: Map<YearMonth, MonthTotals>): Long =
+        openingMinor + totals.values.sumOf { it.balanceMinor }
+
     public fun limitUsage(limit: CategoryLimit, spentMinor: Long): LimitUsage {
         val ratio = Money.ratio(spentMinor, limit.limitMinor) ?: if (spentMinor > 0) Double.POSITIVE_INFINITY else 0.0
         val status = when {

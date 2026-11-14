@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.fingramm.R
 import app.fingramm.domain.model.CurrencyCode
+import app.fingramm.ui.common.BalanceInput
 import app.fingramm.ui.common.IntField
 import app.fingramm.ui.common.MoneyField
 import app.fingramm.ui.common.NotificationPermissionRequest
@@ -109,7 +110,9 @@ fun OnboardingContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             CurrencySection(state, onUpdate)
+            BalanceSection(state, onUpdate)
             MonthStartSection(state, onUpdate)
+            IncomeSection(state, onUpdate)
             RecurringSection(state, onUpdate)
             EveningSection(state, onUpdate)
             TextButton(onClick = onRestore) { Text(stringResource(R.string.onboarding_restore)) }
@@ -118,10 +121,7 @@ fun OnboardingContent(
 }
 
 @Composable
-private fun CurrencySection(
-    state: OnboardingUiState,
-    onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit,
-) {
+private fun CurrencySection(state: OnboardingUiState, onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit) {
     SectionTitle(stringResource(R.string.survey_currency_title))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CurrencyCode.entries.forEach { currency ->
@@ -135,10 +135,18 @@ private fun CurrencySection(
 }
 
 @Composable
-private fun MonthStartSection(
-    state: OnboardingUiState,
-    onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit,
-) {
+private fun BalanceSection(state: OnboardingUiState, onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit) {
+    SectionTitle(stringResource(R.string.onboarding_balance_title))
+    Text(stringResource(R.string.onboarding_balance_hint), style = MaterialTheme.typography.bodySmall)
+    BalanceInput(
+        valueMinor = state.balanceMinor,
+        onValueChange = { value -> onUpdate { it.copy(balanceMinor = value) } },
+        suffix = state.currency.symbol,
+    )
+}
+
+@Composable
+private fun MonthStartSection(state: OnboardingUiState, onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit) {
     var picking by remember { mutableStateOf(false) }
     SectionTitle(stringResource(R.string.onboarding_month_title))
     Text(stringResource(R.string.onboarding_month_hint), style = MaterialTheme.typography.bodySmall)
@@ -158,10 +166,7 @@ private fun MonthStartSection(
 }
 
 @Composable
-private fun RecurringSection(
-    state: OnboardingUiState,
-    onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit,
-) {
+private fun RecurringSection(state: OnboardingUiState, onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit) {
     var pickingTime by remember { mutableStateOf(false) }
     SectionTitle(stringResource(R.string.onboarding_recurring_title))
     Text(stringResource(R.string.onboarding_recurring_hint), style = MaterialTheme.typography.bodySmall)
@@ -169,8 +174,7 @@ private fun RecurringSection(
         StarterRowItem(
             row = row,
             showErrors = state.showErrors,
-            onChange = {
-                    changed ->
+            onChange = { changed ->
                 onUpdate { s -> s.copy(rows = s.rows.toMutableList().also { it[index] = changed }) }
             },
         )
@@ -195,11 +199,7 @@ private fun RecurringSection(
 }
 
 @Composable
-private fun StarterRowItem(
-    row: StarterRow,
-    showErrors: Boolean,
-    onChange: (StarterRow) -> Unit,
-) {
+private fun StarterRowItem(row: StarterRow, showErrors: Boolean, onChange: (StarterRow) -> Unit) {
     Column {
         Row(
             Modifier
@@ -239,10 +239,7 @@ private fun StarterRowItem(
 }
 
 @Composable
-private fun EveningSection(
-    state: OnboardingUiState,
-    onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit,
-) {
+private fun EveningSection(state: OnboardingUiState, onUpdate: ((OnboardingUiState) -> OnboardingUiState) -> Unit) {
     var pickingTime by remember { mutableStateOf(false) }
     SectionTitle(stringResource(R.string.onboarding_evening_title))
     SwitchRow(

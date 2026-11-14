@@ -6,7 +6,6 @@ import app.fingramm.data.toDomain
 import app.fingramm.data.toEntity
 import app.fingramm.domain.backup.BackupData
 import app.fingramm.domain.backup.BackupMerger
-import app.fingramm.domain.model.ReminderSettings
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,10 +22,10 @@ class BackupRepository @Inject constructor(
 ) {
     suspend fun snapshot(): BackupData {
         val current = settings.current()
-        return db.withTransaction { readAll(current.reminder, current.monthStartDay) }
+        return db.withTransaction { readAll(current) }
     }
 
-    private suspend fun readAll(reminder: ReminderSettings, monthStartDay: Int): BackupData {
+    private suspend fun readAll(current: AppSettings): BackupData {
         val profileDao = db.profileDao()
         return BackupData(
             profile = profileDao.getProfile()?.toDomain(),
@@ -35,8 +34,9 @@ class BackupRepository @Inject constructor(
             recurringTemplates = db.recurringDao().getAll().map { it.toDomain() },
             goals = db.goalDao().getAll().map { it.toDomain() },
             categoryLimits = db.categoryDao().getLimits().map { it.toDomain() },
-            reminder = reminder,
-            monthStartDay = monthStartDay,
+            reminder = current.reminder,
+            monthStartDay = current.monthStartDay,
+            openingBalanceMinor = current.openingBalanceMinor,
         )
     }
 
@@ -50,6 +50,7 @@ class BackupRepository @Inject constructor(
         // При слиянии настройки текущие (или импортированные, если профиля ещё не было).
         settings.setReminder(result.reminder)
         settings.setMonthStartDay(result.monthStartDay)
+        settings.setOpeningBalance(result.openingBalanceMinor)
         return result
     }
 

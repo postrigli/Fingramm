@@ -69,6 +69,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setLockEnabled(enabled) }
     }
 
+    /** Остаток средств на начало учёта: от него считается «Остаток средств» на сводке. */
+    fun setOpeningBalance(minor: Long) {
+        viewModelScope.launch { settings.setOpeningBalance(minor) }
+    }
+
     /** День начала расчётного месяца 1–28. Данные не меняются: итоги пересчитываются по новым границам. */
     fun setMonthStartDay(day: Int) {
         viewModelScope.launch {

@@ -31,6 +31,8 @@ data class AppSettings(
     val presetsVersion: Int = 1,
     /** День (epoch day), когда пользователь нажал «Ничего не тратил»: вечернее напоминание в этот день не приходит. */
     val quietDay: Long = NO_QUIET_DAY,
+    /** Остаток средств на начало учёта (может быть отрицательным). */
+    val openingBalanceMinor: Long = 0,
 )
 
 @Singleton
@@ -49,6 +51,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             monthStartDay = BudgetPeriod.normalize(prefs[MONTH_START_DAY] ?: BudgetPeriod.DEFAULT_START_DAY),
             presetsVersion = prefs[PRESETS_VERSION] ?: 1,
             quietDay = prefs[QUIET_DAY] ?: NO_QUIET_DAY,
+            openingBalanceMinor = prefs[OPENING_BALANCE] ?: 0L,
         )
     }
 
@@ -78,6 +81,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         dataStore.edit { it[MONTH_START_DAY] = BudgetPeriod.normalize(day) }
     }
 
+    suspend fun setOpeningBalance(minor: Long) {
+        dataStore.edit { it[OPENING_BALANCE] = minor }
+    }
+
     suspend fun setPresetsVersion(version: Int) {
         dataStore.edit { it[PRESETS_VERSION] = version }
     }
@@ -102,5 +109,6 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         val MONTH_START_DAY = intPreferencesKey("month_start_day")
         val PRESETS_VERSION = intPreferencesKey("presets_version")
         val QUIET_DAY = longPreferencesKey("quiet_day")
+        val OPENING_BALANCE = longPreferencesKey("opening_balance")
     }
 }

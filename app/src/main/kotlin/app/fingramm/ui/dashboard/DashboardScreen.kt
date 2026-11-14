@@ -66,6 +66,7 @@ fun DashboardScreen(
         }
         val money = { minor: Long -> Money.format(minor, state.currency) }
         ScreenColumn(Modifier.padding(padding)) {
+            BalanceCard(state.balanceMinor, money)
             PeriodSwitcher(
                 label = formatPeriod(state.month, state.startDay),
                 canGoNext = state.canGoNext,
@@ -110,6 +111,26 @@ fun DashboardScreen(
                 ) { Text(stringResource(R.string.disclaimer_ok)) }
             },
         )
+    }
+}
+
+/** Сколько денег у пользователя сейчас (начальный остаток плюс все операции). */
+@Composable
+private fun BalanceCard(balanceMinor: Long, money: (Long) -> String) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.dashboard_balance_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(money(balanceMinor), style = MaterialTheme.typography.headlineMedium)
+            Text(
+                stringResource(R.string.dashboard_balance_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

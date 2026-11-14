@@ -692,4 +692,26 @@ class RepositoriesTest {
         assertEquals(null, saved.recurringId)
         assertEquals(LocalDate.of(2026, 11, 5), recurring.get(id)?.nextDueDate)
     }
+
+    @Test
+    fun openingBalanceIsStoredAndSurvivesBackupAndRestore() = runBlocking {
+        onboard()
+        settings.setOpeningBalance(-1_500_000)
+        assertEquals(-1_500_000L, settings.current().openingBalanceMinor)
+        val snapshot = backup.snapshot()
+        assertEquals(-1_500_000L, snapshot.openingBalanceMinor)
+        backup.wipe()
+        assertEquals(0L, settings.current().openingBalanceMinor)
+        backup.importData(snapshot, ImportMode.REPLACE)
+        assertEquals(-1_500_000L, settings.current().openingBalanceMinor)
+    }
+
+    @Test
+    fun mergingKeepsTheCurrentOpeningBalance() = runBlocking {
+        onboard()
+        settings.setOpeningBalance(700_000)
+        val incoming = backup.snapshot().copy(openingBalanceMinor = 9_000_000)
+        backup.importData(incoming, ImportMode.MERGE)
+        assertEquals(700_000L, settings.current().openingBalanceMinor)
+    }
 }

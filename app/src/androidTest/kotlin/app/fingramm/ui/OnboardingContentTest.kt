@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -14,6 +15,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.fingramm.R
 import app.fingramm.domain.model.CurrencyCode
+import app.fingramm.ui.onboarding.IncomeFrequency
+import app.fingramm.ui.onboarding.IncomeKind
 import app.fingramm.ui.onboarding.OnboardingContent
 import app.fingramm.ui.onboarding.OnboardingUiState
 import app.fingramm.ui.theme.FingrammTheme
@@ -119,6 +122,54 @@ class OnboardingContentTest {
         rule.runOnIdle {
             assertEquals(1, started)
             assertEquals(0, permissionAsked)
+        }
+    }
+
+    @Test
+    fun balanceHelpExplainsHowToCountTheMoney() {
+        launch()
+        rule.onNodeWithText(str(R.string.onboarding_balance_title)).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription(str(R.string.balance_help_cd)).performScrollTo().performClick()
+        rule.onNodeWithText(str(R.string.balance_help_text)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theBalanceCanBeMarkedAsNegative() {
+        launch(OnboardingUiState(balanceMinor = 150_000))
+        click(str(R.string.balance_negative))
+        rule.runOnIdle { assertEquals(-150_000L, latest.balanceMinor) }
+    }
+
+    @Test
+    fun incomeOffersMonthlyTwiceMonthlyAndWeeklyPayments() {
+        launch()
+        click(str(R.string.income_primary))
+        rule.runOnIdle { assertTrue(latest.primaryIncome.enabled) }
+        click(str(R.string.income_freq_twice))
+        rule.runOnIdle { assertEquals(IncomeFrequency.TWICE_MONTHLY, latest.primaryIncome.frequency) }
+        rule.onNodeWithText(str(R.string.income_second_day)).performScrollTo().assertIsDisplayed()
+        click(str(R.string.income_freq_week))
+        rule.runOnIdle { assertEquals(IncomeFrequency.WEEKLY, latest.primaryIncome.frequency) }
+    }
+
+    @Test
+    fun aSecondIncomeCanBeAddedAndRemoved() {
+        launch()
+        click(str(R.string.income_add_second))
+        rule.runOnIdle { assertEquals(IncomeKind.RENT, latest.secondIncome?.kind) }
+        rule.onNodeWithText(str(R.string.income_second_title)).performScrollTo().assertIsDisplayed()
+        click(str(R.string.income_remove))
+        rule.runOnIdle { assertEquals(null, latest.secondIncome) }
+    }
+
+    @Test
+    fun anIncomeWithoutAmountBlocksTheStart() {
+        launch()
+        click(str(R.string.income_primary))
+        clickStart()
+        rule.runOnIdle {
+            assertTrue(latest.showErrors)
+            assertFalse(latest.valid)
         }
     }
 

@@ -36,6 +36,8 @@ public data class BackupData(
     val reminder: ReminderSettings = ReminderSettings(),
     /** День начала расчётного месяца 1–28. В файлах без этого поля — календарный месяц. */
     val monthStartDay: Int = BudgetPeriod.DEFAULT_START_DAY,
+    /** Остаток средств на начало учёта (может быть отрицательным, если долги больше денег). */
+    val openingBalanceMinor: Long = 0,
 )
 
 /** Файл бэкапа: версия схемы + данные. */

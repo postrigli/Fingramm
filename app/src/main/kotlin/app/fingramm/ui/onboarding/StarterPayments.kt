@@ -19,6 +19,5 @@ object StarterPayments {
             StarterPayment("communication", R.string.starter_communication, TransactionType.EXPENSE, 5),
             StarterPayment("loans", R.string.starter_loan, TransactionType.EXPENSE, 10),
             StarterPayment("subscriptions", R.string.starter_subscriptions, TransactionType.EXPENSE, 1),
-            StarterPayment("salary", R.string.starter_salary, TransactionType.INCOME, 10),
         )
 }

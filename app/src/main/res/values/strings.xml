@@ -45,6 +45,33 @@
 
     <string name="survey_welcome_privacy">Все данные хранятся только на вашем устройстве. Приложение не выходит в интернет и не требует регистрации.</string>
     <string name="survey_currency_title">Основная валюта</string>
+    <string name="balance_label">Сколько денег у вас сейчас</string>
+    <string name="balance_negative">В минусе: долги больше, чем денег</string>
+    <string name="balance_help_cd">Как посчитать остаток</string>
+    <string name="balance_help_title">Как посчитать остаток</string>
+    <string name="balance_help_text">Сложите всё, чем вы можете распоряжаться сегодня: наличные, деньги на картах и счетах, свободные вклады и накопления. Вычтите то, что уже должны: задолженность по кредитной карте, долги знакомым, рассрочки, которые придётся гасить из этих денег.\n\nНе включайте недвижимость, машину и ипотеку: это не деньги, которые вы тратите.\n\nЕсли долгов больше, чем денег, введите разницу и включите «В минусе». Цифра приблизительная, её можно изменить позже в «Настройки».</string>
+    <string name="onboarding_balance_title">Остаток средств</string>
+    <string name="onboarding_balance_hint">С какой суммы начинаем учёт. По ней приложение покажет, сколько денег у вас сейчас.</string>
+    <string name="dashboard_balance_title">Остаток средств</string>
+    <string name="dashboard_balance_hint">Начальный остаток плюс доходы минус расходы за всё время</string>
+    <string name="settings_balance_title">Остаток средств</string>
+    <string name="settings_balance_hint">Сумма, с которой начат учёт. Остаток на сводке считается от неё. Изменить можно в любой момент.</string>
+    <string name="settings_balance_button">Начальный остаток: %1$s</string>
+    <string name="onboarding_income_title">Доходы</string>
+    <string name="onboarding_income_hint">Отметьте основной доход: в день выплаты придёт напоминание, а внести её можно одним нажатием.</string>
+    <string name="income_primary">Основной доход или зарплата</string>
+    <string name="income_second_title">Второй доход</string>
+    <string name="income_add_second">Добавить второй доход (вторая работа, аренда)</string>
+    <string name="income_remove">Убрать</string>
+    <string name="income_amount">Сумма одной выплаты</string>
+    <string name="income_freq_month">Раз в месяц</string>
+    <string name="income_freq_twice">2 раза в месяц</string>
+    <string name="income_freq_week">Каждую неделю</string>
+    <string name="income_first_day">День 1-й выплаты</string>
+    <string name="income_second_day">День 2-й выплаты</string>
+    <string name="income_kind_salary">Работа или зарплата</string>
+    <string name="income_kind_rent">Аренда недвижимости</string>
+    <string name="income_kind_side">Подработка</string>
     <string name="onboarding_title">Добро пожаловать в Fingramm</string>
     <string name="onboarding_subtitle">Пара настроек, чтобы вносить траты было быстро. Всё можно изменить позже.</string>
     <string name="onboarding_month_title">Начало месяца</string>
@@ -61,8 +88,7 @@
     <string name="starter_communication">Связь и интернет</string>
     <string name="starter_loan">Кредит или рассрочка</string>
     <string name="starter_subscriptions">Подписки</string>
-    <string name="starter_salary">Зарплата</string>
-    <string name="onboarding_restore">У меня есть резервная копия</string>
+        <string name="onboarding_restore">У меня есть резервная копия</string>
 
     <string name="survey_goal_title">Название цели</string>
     <string name="survey_goal_target">Целевая сумма</string>

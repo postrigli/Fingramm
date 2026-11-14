@@ -54,6 +54,8 @@ data class DashboardUiState(
     val monthlyBars: List<MonthTotals> = emptyList(),
     val goals: List<GoalProgress> = emptyList(),
     val showDisclaimer: Boolean = false,
+    /** Сколько денег сейчас: начальный остаток плюс все доходы минус все расходы. */
+    val balanceMinor: Long = 0,
 ) {
     val canGoNext: Boolean get() = month < currentMonth
 }
@@ -64,6 +66,7 @@ private data class Inputs(
     val categories: List<Category>,
     val goals: List<Goal>,
     val disclaimerShown: Boolean,
+    val openingBalanceMinor: Long,
     val startDay: Int,
 )
 
@@ -95,6 +98,7 @@ class DashboardViewModel
                     categories,
                     goals,
                     appSettings.disclaimerShown,
+                    appSettings.openingBalanceMinor,
                     appSettings.monthStartDay,
                 )
             }
@@ -137,6 +141,7 @@ class DashboardViewModel
                         .filter { !it.forecast.reached }
                         .take(MAX_GOALS),
                 showDisclaimer = !inputs.disclaimerShown,
+                balanceMinor = StatsCalculator.currentBalance(inputs.openingBalanceMinor, totals),
             )
         }
 
