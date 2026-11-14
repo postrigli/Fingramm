@@ -62,6 +62,9 @@ class OnboardingContentTest {
 
     private fun click(label: String) = rule.onNodeWithText(label).performScrollTo().performClick()
 
+    /** Кнопка «Начать» закреплена внизу экрана и не лежит в прокручиваемой области. */
+    private fun clickStart() = rule.onNodeWithText(str(R.string.action_start)).performClick()
+
     @Test
     fun screenExplainsPrivacyAndOffersTheWholeSetupOnOnePage() {
         launch()
@@ -91,7 +94,7 @@ class OnboardingContentTest {
     fun aTickedPaymentWithoutAmountBlocksTheStart() {
         launch()
         click(str(R.string.starter_rent))
-        click(str(R.string.action_start))
+        clickStart()
         rule.runOnIdle {
             assertTrue(latest.showErrors)
             assertFalse(latest.valid)
@@ -101,7 +104,7 @@ class OnboardingContentTest {
     @Test
     fun startWithoutPaymentsIsAllowedAndAsksForNotificationPermissionBecauseOfTheEveningReminder() {
         launch()
-        click(str(R.string.action_start))
+        clickStart()
         rule.runOnIdle {
             assertEquals(1, started)
             assertEquals(1, permissionAsked)
@@ -112,7 +115,7 @@ class OnboardingContentTest {
     @Test
     fun startWithoutAnyNotificationsDoesNotAskForPermission() {
         launch(OnboardingUiState(eveningReminder = false))
-        click(str(R.string.action_start))
+        clickStart()
         rule.runOnIdle {
             assertEquals(1, started)
             assertEquals(0, permissionAsked)
